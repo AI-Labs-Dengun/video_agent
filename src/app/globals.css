@@ -21,7 +21,7 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: #23234a;
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -31,7 +31,7 @@ html.dark {
 }
 
 html.dark .bg-auth-gradient {
-  background: linear-gradient(135deg, #3a0ca3 0%, #03045e 100%);
+  background: linear-gradient(135deg, #9133e7 0%, #541d85 50%, #1c2458 100%);
 }
 
 html.dark .auth-card {
@@ -51,8 +51,12 @@ html.dark .auth-button:hover {
   background: linear-gradient(to right, #03045e, #3a0ca3);
 }
 
+html.dark input, html.dark textarea {
+  color: #fff;
+}
+
 .bg-auth-gradient {
-  background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+  background: linear-gradient(135deg, #ea84c3 0%, #85b5f8 50%, #bbd8ff 100%);
 }
 
 .auth-card {
@@ -93,4 +97,48 @@ html.dark .auth-button:hover {
 
 .auth-button:hover {
   background: linear-gradient(to right, #7c3aed, #2563eb);
+}
+
+button, [type="button"], [type="submit"] {
+  cursor: pointer;
+  transition: filter 0.15s, opacity 0.15s;
+}
+
+button:hover, [type="button"]:hover, [type="submit"]:hover {
+  filter: brightness(1.08);
+  opacity: 0.92;
+}
+
+input, textarea {
+  color: #23234a;
+}
+
+::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+/* Custom scrollbar for chat area */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #ea84c3 0%, #85b5f8 100%);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #85b5f8 #0000;
+}
+
+/* Dark mode custom scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #541d85 0%, #1c2458 100%);
+}
+.dark .custom-scrollbar {
+  scrollbar-color: #541d85 #0000;
 }
