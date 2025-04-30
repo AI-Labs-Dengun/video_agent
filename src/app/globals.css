@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -16,6 +18,38 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+  }
+}
+
+@layer components {
+  .bg-auth-gradient {
+    @apply bg-gradient-to-r from-purple-600 via-purple-800 to-blue-900;
+  }
+
+  .auth-card {
+    @apply bg-white/70 dark:bg-gray-800/70 rounded-lg shadow-lg p-6;
+  }
+
+  .auth-input {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+           bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
+           focus:outline-none focus:ring-2 focus:ring-purple-500;
+  }
+
+  .auth-button {
+    @apply w-full px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600
+           text-white font-semibold hover:from-purple-700 hover:to-blue-700
+           transition-colors duration-200;
+  }
+
+  .custom-scrollbar {
+    @apply overflow-y-auto;
   }
 }
 
@@ -118,21 +152,17 @@ input, textarea {
   opacity: 1;
 }
 
-/* Custom scrollbar for chat area */
+/* Custom scrollbar styles */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
-  background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #ea84c3 0%, #85b5f8 100%);
-  border-radius: 8px;
+  @apply bg-gray-300 dark:bg-gray-600 rounded-lg;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #85b5f8 #0000;
+  @apply bg-transparent;
 }
 
 /* Dark mode custom scrollbar */

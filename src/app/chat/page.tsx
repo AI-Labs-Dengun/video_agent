@@ -1,11 +1,12 @@
 "use client";
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSupabase } from '../providers/SupabaseProvider';
 import { useRouter } from 'next/navigation';
-import { FaRegThumbsUp, FaRegThumbsDown, FaMicrophone, FaPaperPlane, FaUserCircle, FaRobot, FaCog, FaRegCommentDots, FaVolumeUp, FaRegSmile } from 'react-icons/fa';
+import { FaRegThumbsUp, FaRegThumbsDown, FaMicrophone, FaPaperPlane, FaUserCircle, FaRobot, FaCog, FaRegCommentDots, FaVolumeUp, FaRegSmile, FaStop } from 'react-icons/fa';
 import { useTheme } from '../providers/ThemeProvider';
 import Picker from '@emoji-mart/react';
 import emojiData from '@emoji-mart/data';
+import TypewriterEffect from 'react-typewriter-effect';
 
 // Message type
 interface Message {
@@ -45,18 +46,56 @@ function CommentModal({ open, onClose, message, onSubmit }: { open: boolean, onC
   );
 }
 
+// Voice modal component
+function VoiceModal({ open, mode, onClose, onToggleRecord }: {
+  open: boolean,
+  mode: 'ai-speaking' | 'ready-to-record' | 'recording',
+  onClose: () => void,
+  onToggleRecord: () => void,
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30">
+      <div className="rounded-2xl shadow-2xl p-6 w-[95vw] max-w-md bg-gradient-to-br from-purple-700 to-purple-900 relative">
+        <button className="absolute top-4 right-4 text-white/70 hover:text-white text-xl z-10" onClick={onClose}>&times;</button>
+        <h2 className="text-lg font-bold text-white mb-4">Chat por Voz</h2>
+        <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
+          <div className="bg-purple-500 rounded-full p-2">
+            <FaUserCircle className="text-3xl text-white" />
+          </div>
+          <div>
+            <div className="text-white font-semibold">
+              {mode === 'ai-speaking' ? 'Assistente' : 'Você'}
+            </div>
+            <div className="text-white/80 text-sm">
+              {mode === 'ai-speaking' ? 'Falando' : mode === 'ready-to-record' ? 'Pronto para gravar' : 'A Gravar'}
+            </div>
+          </div>
+          <div className="ml-auto">
+            {mode === 'ai-speaking' && (
+              <span className="text-white/80 text-2xl">🔊</span>
+            )}
+            {(mode === 'ready-to-record' || mode === 'recording') && (
+              <button
+                className={`text-white/80 text-2xl rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-white ${mode === 'ready-to-record' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                onClick={onToggleRecord}
+                type="button"
+              >
+                {mode === 'ready-to-record' ? <FaMicrophone /> : <FaStop />}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const Chat = () => {
   const { user, signOut } = useSupabase();
   const { dark, toggleTheme } = useTheme();
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      content: 'Olá! Seja bem-vindo ao nosso chat. Como posso ajudá-lo hoje?',
-      user: 'bot',
-      created_at: new Date().toISOString(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -66,11 +105,34 @@ const Chat = () => {
   const [commentModal, setCommentModal] = useState<{ open: boolean, message?: { id: string, content: string } }>({ open: false });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [voiceMode, setVoiceMode] = useState<'idle' | 'recording' | 'ai-speaking'>('idle');
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  // Add state for voice modal mode
+  const [voiceModalMode, setVoiceModalMode] = useState<'ai-speaking' | 'ready-to-record' | 'recording'>('ai-speaking');
+  const [greetingLoading, setGreetingLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isTypewriterActive, setIsTypewriterActive] = useState(false);
+  const [ttsLoadingMsgId, setTtsLoadingMsgId] = useState<string | null>(null);
 
-  // Scroll to bottom when messages change
-  React.useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const handleScroll = () => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const threshold = 100; // px from bottom
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    setIsNearBottom(atBottom);
+  };
+
+  // Scroll to bottom when messages change, but only if user is near the bottom
+  useEffect(() => {
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isNearBottom]);
 
   // Redirect to sign-in if not authenticated
   React.useEffect(() => {
@@ -85,6 +147,109 @@ const Chat = () => {
       inputRef.current.focus();
     }
   }, [messages]);
+
+  // Replace the static initial message logic
+  useEffect(() => {
+    if (messages.length === 0) {
+      setGreetingLoading(true);
+      (async () => {
+        try {
+          // Fetch both instructions and knowledge files from public directory
+          const [instructionsRes, knowledgeRes] = await Promise.all([
+            fetch('/AI_INSTRUCTIONS.md'),
+            fetch('/AI_KNOWLEDGE.md'),
+          ]);
+          const instructionsText = await instructionsRes.text();
+          const knowledgeText = await knowledgeRes.text();
+          console.log('Instructions:', instructionsText);
+          console.log('Knowledge:', knowledgeText);
+          // Use a specific, creative prompt for the greeting
+          const greetingPrompt = `Gere uma saudação criativa, calorosa e original para um novo utilizador. Use as INSTRUÇÕES para definir o tom e estilo da mensagem, e a BASE DE CONHECIMENTO para incorporar informações específicas sobre a Dengun e seus serviços. Seja original e não copie nenhum exemplo das instruções. A saudação deve refletir a personalidade profissional e acolhedora da Dengun, mencionando alguns dos serviços principais e convidando o utilizador a explorar como podemos ajudar.`;
+          console.log('Prompt sent to API:', greetingPrompt);
+          const res = await fetch('/api/chatgpt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: greetingPrompt }),
+          });
+          const data = await res.json();
+          console.log('API response:', data);
+          setMessages([
+            {
+              id: 'welcome',
+              content: data.reply && data.reply.trim() ? data.reply : '[ERRO] Não foi possível gerar uma saudação criativa.',
+              user: 'bot',
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        } catch (err) {
+          setMessages([
+            {
+              id: 'welcome',
+              content: 'Olá! Seja bem-vindo ao nosso chat. Como posso ajudá-lo hoje?',
+              user: 'bot',
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        } finally {
+          setGreetingLoading(false);
+        }
+      })();
+    }
+    // eslint-disable-next-line
+  }, []);
+
+  // Play TTS audio for AI response (used for explicit voice mode with modal)
+  const playTTS = async (text: string, onEnd?: () => void) => {
+    setVoiceModalMode('ai-speaking');
+    setVoiceModalOpen(true);
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error('TTS failed');
+      const audioBlob = await res.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => {
+        setVoiceModalMode('ready-to-record');
+        if (onEnd) onEnd();
+      };
+      audio.play();
+    } catch (err) {
+      setVoiceModalMode('ready-to-record');
+      if (onEnd) onEnd();
+    }
+  };
+
+  // Play TTS audio for bot messages without opening the modal (auto-read)
+  const speakBotMessage = async (text: string) => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error('TTS failed');
+      const audioBlob = await res.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.play();
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,6 +360,155 @@ const Chat = () => {
     }, 0);
   };
 
+  // Add voice recording logic
+  const startRecording = async () => {
+    setVoiceModalMode('recording');
+    setVoiceModalOpen(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = mediaRecorder;
+    audioChunksRef.current = [];
+    mediaRecorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+
+    // Set onstop handler BEFORE starting
+    mediaRecorder.onstop = async () => {
+      console.log('Recording stopped, processing audio...');
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+      setAudioUrl(URL.createObjectURL(audioBlob));
+      setVoiceModalMode('ai-speaking'); // temporarily set to ai-speaking while waiting
+      setVoiceMode('idle');
+      try {
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'audio.wav');
+        const res = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        console.log('Transcription result:', data);
+        if (data.text) {
+          // Auto-send the transcribed message
+          const userMsg = {
+            id: 'user-' + Date.now(),
+            content: data.text,
+            user: 'me' as 'me',
+            created_at: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, userMsg]);
+          setLoading(true);
+          try {
+            const res = await fetch('/api/chatgpt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: data.text }),
+            });
+            const aiData = await res.json();
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: 'bot-' + Date.now(),
+                content: aiData.reply || 'Desculpe, não consegui responder agora.',
+                user: 'bot',
+                created_at: new Date().toISOString(),
+              },
+            ]);
+            // After AI response, play TTS and loop
+            if (aiData.reply) {
+              playTTS(aiData.reply, () => {
+                setVoiceModalMode('ready-to-record');
+              });
+            } else {
+              setVoiceModalMode('ready-to-record');
+            }
+          } catch (err) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: 'bot-error-' + Date.now(),
+                content: 'Erro ao conectar ao ChatGPT.',
+                user: 'bot',
+                created_at: new Date().toISOString(),
+              },
+            ]);
+            setVoiceModalMode('ready-to-record');
+          } finally {
+            setLoading(false);
+          }
+        } else {
+          setVoiceModalMode('ready-to-record');
+        }
+      } catch (err) {
+        setVoiceModalMode('ready-to-record');
+        // Optionally show error
+      }
+    };
+    mediaRecorder.start();
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  // In Chat component, add a handler for toggling record/stop
+  const handleToggleRecord = () => {
+    if (voiceModalMode === 'ready-to-record') {
+      startRecording();
+    } else if (voiceModalMode === 'recording') {
+      stopRecording();
+    }
+  };
+
+  const handleVoiceModalClose = () => {
+    setVoiceModalOpen(false);
+    setVoiceModalMode('ai-speaking');
+    setVoiceMode('idle');
+    // Stop TTS playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    // Stop recording if active
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  // When a new bot message is added, estimate typewriter duration and set isTypewriterActive
+  useEffect(() => {
+    if (
+      messages.length > 0 &&
+      messages[messages.length - 1].user === 'bot'
+    ) {
+      // Estimate duration: (message length * typeSpeed) + startDelay
+      const typeSpeed = 50; // ms per char (from your TypewriterEffect)
+      const startDelay = 100; // ms (from your TypewriterEffect)
+      const msg = messages[messages.length - 1].content || '';
+      setIsTypewriterActive(true);
+      const timeout = setTimeout(() => {
+        setIsTypewriterActive(false);
+      }, startDelay + msg.length * typeSpeed);
+      return () => clearTimeout(timeout);
+    }
+  }, [messages]);
+
+  // Only run the timer-based scroll when isTypewriterActive and isNearBottom are true
+  useEffect(() => {
+    if (
+      isTypewriterActive &&
+      isNearBottom
+    ) {
+      const interval = setInterval(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [isTypewriterActive, isNearBottom]);
+
   if (!user) return null;
 
   return (
@@ -244,57 +558,91 @@ const Chat = () => {
             </div>
           </div>
         </header>
-        <main className="flex-1 px-6 py-4 overflow-y-auto custom-scrollbar">
-          <div className="flex flex-col gap-6">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.user === 'me' ? 'justify-end' : 'justify-start'}`}
-              >
-                {msg.user === 'bot' && (
-                  <div className="flex flex-col items-end mr-2 justify-center">
-                    <FaRobot className="text-3xl text-blue-600 dark:text-blue-200" />
-                  </div>
-                )}
+        <main
+          ref={chatContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 px-6 py-4 overflow-y-auto custom-scrollbar">
+          {greetingLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></span>
+              <span className="ml-3 text-white/80">Aguarde, carregando saudação...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {messages.map((msg) => (
                 <div
-                  className={`rounded-xl px-5 py-3 border-[0.5px] border-white text-white bg-transparent max-w-[70%] min-w-[100px] text-base ${
-                    msg.user === 'me' ? 'ml-2' : 'mr-2'
-                  }`}
+                  key={msg.id}
+                  className={`flex ${msg.user === 'me' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <span>{msg.content}</span>
+                  {msg.user === 'bot' && (
+                    <div className="flex flex-col items-end mr-2 justify-center">
+                      <FaRobot className="text-3xl text-blue-600 dark:text-blue-200" />
+                    </div>
+                  )}
+                  <div
+                    className={`rounded-xl px-5 py-3 border-[0.5px] border-white text-white bg-transparent max-w-[70%] min-w-[100px] text-base ${
+                      msg.user === 'me' ? 'ml-2' : 'mr-2'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      {msg.user === 'bot' ? (
+                        <TypewriterEffect
+                          text={msg.content}
+                          cursorColor="transparent"
+                          textColor="#ffffff"
+                          startDelay={100}
+                          typeSpeed={50}
+                        />
+                      ) : (
+                        <span>{msg.content}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-3 relative">
+                      {msg.user === 'bot' && (
+                        <>
+                          <button
+                            className={`transition-colors ${feedback[msg.id] === 'like' ? 'text-green-400' : 'text-white opacity-80'} hover:text-green-400`}
+                            onClick={() => handleFeedback(msg.id, 'like', msg.content)}
+                          >
+                            <FaRegThumbsUp className="text-lg" />
+                          </button>
+                          <button
+                            className={`transition-colors ${feedback[msg.id] === 'dislike' ? 'text-red-400' : 'text-white opacity-80'} hover:text-red-400`}
+                            onClick={() => handleFeedback(msg.id, 'dislike', msg.content)}
+                          >
+                            <FaRegThumbsDown className="text-lg" />
+                          </button>
+                          <button
+                            className={`hover:text-blue-300 transition-colors`}
+                            onClick={async () => {
+                              setTtsLoadingMsgId(msg.id);
+                              await playTTS(msg.content, () => setTtsLoadingMsgId(null));
+                              setTtsLoadingMsgId(null);
+                            }}
+                            disabled={ttsLoadingMsgId === msg.id}
+                          >
+                            {ttsLoadingMsgId === msg.id ? (
+                              <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 inline-block"></span>
+                            ) : (
+                              <FaVolumeUp className="text-lg text-white opacity-80" />
+                            )}
+                          </button>
+                          <button className="hover:text-blue-300 transition-colors" onClick={() => setCommentModal({ open: true, message: { id: msg.id, content: msg.content } })}><FaRegCommentDots className="text-lg text-white opacity-80" /></button>
+                        </>
+                      )}
+                      <span className="absolute bottom-0 right-2 text-xs opacity-60">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 relative">
-                    {msg.user === 'bot' && (
-                      <>
-                        <button
-                          className={`transition-colors ${feedback[msg.id] === 'like' ? 'text-green-400' : 'text-white opacity-80'} hover:text-green-400`}
-                          onClick={() => handleFeedback(msg.id, 'like', msg.content)}
-                        >
-                          <FaRegThumbsUp className="text-lg" />
-                        </button>
-                        <button
-                          className={`transition-colors ${feedback[msg.id] === 'dislike' ? 'text-red-400' : 'text-white opacity-80'} hover:text-red-400`}
-                          onClick={() => handleFeedback(msg.id, 'dislike', msg.content)}
-                        >
-                          <FaRegThumbsDown className="text-lg" />
-                        </button>
-                        <button className="hover:text-blue-300 transition-colors" onClick={() => speak(msg.content)}><FaVolumeUp className="text-lg text-white opacity-80" /></button>
-                        <button className="hover:text-blue-300 transition-colors" onClick={() => setCommentModal({ open: true, message: { id: msg.id, content: msg.content } })}><FaRegCommentDots className="text-lg text-white opacity-80" /></button>
-                      </>
-                    )}
-                    <span className="absolute bottom-0 right-2 text-xs opacity-60">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
+                  {msg.user === 'me' && (
+                    <div className="flex flex-col items-end ml-2 justify-center">
+                      <FaUserCircle className="text-3xl text-white" />
+                    </div>
+                  )}
                 </div>
-                {msg.user === 'me' && (
-                  <div className="flex flex-col items-end ml-2 justify-center">
-                    <FaUserCircle className="text-3xl text-white" />
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </main>
         <footer className="w-full p-6 border-t border-white/20">
           <form
@@ -341,7 +689,21 @@ const Chat = () => {
             >
               <FaPaperPlane />
             </button>
-            <button type="button" className="text-xl text-blue-600 dark:text-blue-200 hover:text-blue-400 ml-1">
+            <button
+              type="button"
+              className="text-xl text-blue-600 dark:text-blue-200 hover:text-blue-400 ml-1"
+              onClick={() => {
+                // Find the last AI message
+                const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
+                if (lastBotMsg) {
+                  setVoiceModalMode('ai-speaking');
+                  setVoiceModalOpen(true);
+                  playTTS(lastBotMsg.content, () => {
+                    setVoiceModalMode('ready-to-record');
+                  });
+                }
+              }}
+            >
               <FaMicrophone />
             </button>
           </form>
@@ -352,6 +714,12 @@ const Chat = () => {
         onClose={() => setCommentModal({ open: false })}
         message={commentModal.message || { id: '', content: '' }}
         onSubmit={comment => commentModal.message && handleComment(commentModal.message.id, commentModal.message.content, comment)}
+      />
+      <VoiceModal
+        open={voiceModalOpen}
+        mode={voiceModalMode}
+        onClose={handleVoiceModalClose}
+        onToggleRecord={handleToggleRecord}
       />
     </div>
   );

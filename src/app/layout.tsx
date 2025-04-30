@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { SupabaseProvider } from "./providers/SupabaseProvider";
 import { headers } from "next/headers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -28,7 +23,7 @@ export default async function RootLayout({
   const allHeaders = await headers();
   const theme = allHeaders.get("x-theme");
   return (
-    <html lang="en" suppressHydrationWarning className={theme === "dark" ? "dark" : ""}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${theme === "dark" ? "dark" : ""}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -50,18 +45,17 @@ export default async function RootLayout({
           html.dark {
             color-scheme: dark;
           }
-          html.dark body {
-            background-color: #0a0a23;
-            color: #ededed;
+          body {
+            font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
           }
         `}} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <SupabaseProvider>
-          <ThemeProvider>
+      <body className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+        <ThemeProvider>
+          <SupabaseProvider>
             {children}
-          </ThemeProvider>
-        </SupabaseProvider>
+          </SupabaseProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
