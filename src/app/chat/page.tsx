@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useSupabase } from '../providers/SupabaseProvider';
 import { useRouter } from 'next/navigation';
 import { FaRegThumbsUp, FaRegThumbsDown, FaMicrophone, FaPaperPlane, FaUserCircle, FaRobot, FaCog, FaRegCommentDots, FaVolumeUp, FaRegSmile, FaStop } from 'react-icons/fa';
@@ -93,6 +93,15 @@ function VoiceModal({ open, mode, onClose, onToggleRecord }: {
   );
 }
 
+// Helper to map language code to language name
+const languageNames: Record<string, string> = {
+  en: 'English',
+  pt: 'Portuguese',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+};
+
 const Chat = () => {
   const { user, signOut } = useSupabase();
   const { dark, toggleTheme } = useTheme();
@@ -122,6 +131,8 @@ const Chat = () => {
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [isTypewriterActive, setIsTypewriterActive] = useState(false);
   const [ttsLoadingMsgId, setTtsLoadingMsgId] = useState<string | null>(null);
+  const [tooltips, setTooltips] = useState<string[]>([]);
+  const [showTooltips, setShowTooltips] = useState(true);
 
   const handleScroll = () => {
     const el = chatContainerRef.current;
@@ -168,7 +179,7 @@ const Chat = () => {
           console.log('Instructions:', instructionsText);
           console.log('Knowledge:', knowledgeText);
           // Use a specific, creative prompt for the greeting based on the current language
-          const greetingPrompt = `Generate a creative, warm, and original greeting for a new user in ${language}. Use the INSTRUCTIONS to define the tone and style of the message, and the KNOWLEDGE BASE to incorporate specific information about Dengun and its services. Be original and do not copy any examples from the instructions. The greeting should reflect Dengun's professional and welcoming personality, mentioning some of the main services and inviting the user to explore how we can help.`;
+          const greetingPrompt = `Generate a creative, warm, and original greeting for a new user in ${language}. Use the INSTRUCTIONS to define the tone and style of the message, and the KNOWLEDGE BASE to incorporate specific information about Dengun and its services. Be original and do not copy any examples from the instructions. The greeting should reflect Dengun's professional and welcoming personality, mentioning some of the main services and inviting the user to explore how we can help. Keep your answer very short (1-2 sentences).`;
           console.log('Prompt sent to API:', greetingPrompt);
           const res = await fetch('/api/chatgpt', {
             method: 'POST',
@@ -201,6 +212,25 @@ const Chat = () => {
     }
     // eslint-disable-next-line
   }, [language]);
+
+  // Select 4 random tooltips on chat open or language change
+  useEffect(() => {
+    if (messages.length === 0) {
+      let allTooltips: string[] = [];
+      const tt = t('chat.tooltips');
+      if (Array.isArray(tt)) {
+        allTooltips = tt;
+      }
+      const shuffled = [...allTooltips].sort(() => 0.5 - Math.random());
+      setTooltips(shuffled.slice(0, 4));
+      setShowTooltips(true);
+    }
+  }, [language, messages.length]);
+
+  // Hide tooltips on first interaction
+  const handleFirstInteraction = () => {
+    if (showTooltips) setShowTooltips(false);
+  };
 
   // Play TTS audio for AI response (used for explicit voice mode with modal)
   const playTTS = async (text: string, onEnd?: () => void) => {
@@ -257,6 +287,7 @@ const Chat = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    handleFirstInteraction();
     if (!newMessage.trim() || !user) return;
     const userMsg: Message = {
       id: 'user-' + Date.now(),
@@ -267,19 +298,20 @@ const Chat = () => {
     setMessages((prev) => [...prev, userMsg]);
     setNewMessage('');
     setLoading(true);
-    // Call ChatGPT API
+    // Always instruct the AI to answer ONLY in the selected language, not mention language, and keep it short
+    const prompt = `${newMessage}\n\nPlease answer ONLY in ${languageNames[language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
     try {
       const res = await fetch('/api/chatgpt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg.content }),
+        body: JSON.stringify({ message: prompt }),
       });
       const data = await res.json();
       setMessages((prev) => [
         ...prev,
         {
           id: 'bot-' + Date.now(),
-          content: data.reply || 'Desculpe, não consegui responder agora.',
+          content: data.reply || t('chat.greeting'),
           user: 'bot',
           created_at: new Date().toISOString(),
         },
@@ -289,7 +321,7 @@ const Chat = () => {
         ...prev,
         {
           id: 'bot-error-' + Date.now(),
-          content: 'Erro ao conectar ao ChatGPT.',
+          content: t('common.error'),
           user: 'bot',
           created_at: new Date().toISOString(),
         },
@@ -457,6 +489,7 @@ const Chat = () => {
 
   // In Chat component, add a handler for toggling record/stop
   const handleToggleRecord = () => {
+    handleFirstInteraction();
     if (voiceModalMode === 'ready-to-record') {
       startRecording();
     } else if (voiceModalMode === 'recording') {
@@ -512,6 +545,51 @@ const Chat = () => {
       return () => clearInterval(interval);
     }
   }, [isTypewriterActive, isNearBottom]);
+
+  // Handle tooltip click
+  const handleTooltipClick = async (tooltip: string) => {
+    handleFirstInteraction();
+    if (!user) return;
+    const userMsg: Message = {
+      id: 'user-' + Date.now(),
+      content: tooltip,
+      user: 'me',
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
+    // Always instruct the AI to answer ONLY in the selected language, not mention language, and keep it short
+    const prompt = `${tooltip}\n\nPlease answer ONLY in ${languageNames[language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
+    try {
+      const res = await fetch('/api/chatgpt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt }),
+      });
+      const data = await res.json();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: 'bot-' + Date.now(),
+          content: data.reply || t('chat.greeting'),
+          user: 'bot',
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: 'bot-error-' + Date.now(),
+          content: t('common.error'),
+          user: 'bot',
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -584,9 +662,7 @@ const Chat = () => {
                     </div>
                   )}
                   <div
-                    className={`rounded-xl px-5 py-3 border-[0.5px] border-white text-white bg-transparent max-w-[70%] min-w-[100px] text-base ${
-                      msg.user === 'me' ? 'ml-2' : 'mr-2'
-                    }`}
+                    className={`rounded-xl px-5 py-3 pb-6 border-[0.5px] border-white text-white bg-transparent max-w-[70%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
                   >
                     <div className="flex items-center gap-2 mb-4">
                       {msg.user === 'bot' ? (
@@ -634,7 +710,9 @@ const Chat = () => {
                           <button className="hover:text-blue-300 transition-colors" onClick={() => setCommentModal({ open: true, message: { id: msg.id, content: msg.content } })}><FaRegCommentDots className="text-lg text-white opacity-80" /></button>
                         </>
                       )}
-                      <span className="absolute bottom-0 right-2 text-xs opacity-60">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      {((msg.user === 'bot' && !isTypewriterActive && msg.id === messages[messages.length-1]?.id) || msg.user === 'me') && (
+                        <span className="absolute bottom-0 right-4 text-xs opacity-60">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      )}
                     </div>
                   </div>
                   {msg.user === 'me' && (
@@ -648,6 +726,23 @@ const Chat = () => {
             </div>
           )}
         </main>
+        {/* Tooltips above the input */}
+        {showTooltips && tooltips.length > 0 && (
+          <div className="w-full px-6">
+            <div className="w-full border-t border-white/30 mb-4" />
+            <div className="flex flex-wrap gap-3 mb-4 justify-center">
+              {tooltips.map((tip, idx) => (
+                <button
+                  key={idx}
+                  className="px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                  onClick={() => handleTooltipClick(tip)}
+                >
+                  {tip}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <footer className="w-full p-6 border-t border-white/20">
           <form
             onSubmit={handleSendMessage}

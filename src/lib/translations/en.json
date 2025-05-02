@@ -27,7 +27,17 @@
       "recording": "Recording...",
       "aiSpeaking": "AI Speaking..."
     },
-    "assistantTitle": "AI Assistant"
+    "assistantTitle": "AI Assistant",
+    "tooltips": [
+      "How can I scale my startup?",
+      "I need an MVP for my idea",
+      "I want to improve my SEO and digital marketing",
+      "I need a website for my business",
+      "How can I optimize my online presence?",
+      "I want to develop a mobile app",
+      "I need help with data analysis",
+      "How can AI help my business?"
+    ]
   },
   "settings": {
     "title": "Settings",

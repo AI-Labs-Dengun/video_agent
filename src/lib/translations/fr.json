@@ -27,7 +27,17 @@
       "recording": "Enregistrement...",
       "aiSpeaking": "IA en train de parler..."
     },
-    "assistantTitle": "Assistant IA"
+    "assistantTitle": "Assistant IA",
+    "tooltips": [
+      "Comment puis-je développer ma startup ?",
+      "J'ai besoin d'un MVP pour mon idée",
+      "Je veux améliorer mon SEO et mon marketing digital",
+      "J'ai besoin d'un site web pour mon entreprise",
+      "Comment puis-je optimiser ma présence en ligne ?",
+      "Je veux développer une application mobile",
+      "J'ai besoin d'aide pour l'analyse de données",
+      "Comment l'IA peut-elle aider mon entreprise ?"
+    ]
   },
   "settings": {
     "title": "Paramètres",

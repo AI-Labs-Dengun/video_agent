@@ -27,7 +27,17 @@
       "recording": "Aufnahme...",
       "aiSpeaking": "KI spricht..."
     },
-    "assistantTitle": "KI-Assistent"
+    "assistantTitle": "KI-Assistent",
+    "tooltips": [
+      "Wie kann ich mein Startup skalieren?",
+      "Ich brauche ein MVP für meine Idee",
+      "Ich möchte mein SEO und digitales Marketing verbessern",
+      "Ich brauche eine Website für mein Unternehmen",
+      "Wie kann ich meine Online-Präsenz optimieren?",
+      "Ich möchte eine mobile App entwickeln",
+      "Ich brauche Hilfe bei der Datenanalyse",
+      "Wie kann KI meinem Unternehmen helfen?"
+    ]
   },
   "settings": {
     "title": "Einstellungen",
