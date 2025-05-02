@@ -730,16 +730,29 @@ const Chat = () => {
         {showTooltips && tooltips.length > 0 && (
           <div className="w-full px-6">
             <div className="w-full border-t border-white/30 mb-4" />
-            <div className="flex flex-wrap gap-3 mb-4 justify-center">
-              {tooltips.map((tip, idx) => (
-                <button
-                  key={idx}
-                  className="px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
-                  onClick={() => handleTooltipClick(tip)}
-                >
-                  {tip}
-                </button>
-              ))}
+            <div className="flex flex-col gap-2 mb-4 items-center w-full">
+              <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
+                {tooltips.slice(0, 2).map((tip, idx) => (
+                  <button
+                    key={idx}
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    onClick={() => handleTooltipClick(tip)}
+                  >
+                    {tip}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
+                {tooltips.slice(2, 4).map((tip, idx) => (
+                  <button
+                    key={idx+2}
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    onClick={() => handleTooltipClick(tip)}
+                  >
+                    {tip}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
