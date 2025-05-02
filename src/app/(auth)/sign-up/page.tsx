@@ -3,11 +3,15 @@ import React, { useState } from 'react';
 import { useTheme } from "../../providers/ThemeProvider";
 import { useSupabase } from "../../providers/SupabaseProvider";
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '../../../lib/LanguageContext';
+import { useTranslation } from '../../../lib/i18n';
 
 export default function SignUp() {
   const { dark, toggleTheme } = useTheme();
   const { signUp } = useSupabase();
   const router = useRouter();
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -25,13 +29,13 @@ export default function SignUp() {
       const { error } = await signUp(email, password, name, company);
       
       if (error) {
-        setError(error.message || 'Failed to sign up');
+        setError(error.message || t('auth.signUpError'));
       } else {
         // Redirect to chat page on successful sign up
         router.push('/chat');
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      setError(err.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -40,8 +44,8 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-gradient relative">
       <div className="auth-card">
-        <h1 className="text-3xl font-semibold mb-2 text-white">Create Your Profile</h1>
-        <p className="mb-6 text-white/80">Please fill in your details to get started</p>
+        <h1 className="text-3xl font-semibold mb-2 text-white">{t('auth.signUp')}</h1>
+        <p className="mb-6 text-white/80">{t('auth.signUpWithGoogle')}</p>
         
         {error && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-200 text-sm">
@@ -50,7 +54,7 @@ export default function SignUp() {
         )}
         
         <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit}>
-          <label className="text-white/90 text-sm font-medium" htmlFor="name">Name</label>
+          <label className="text-white/90 text-sm font-medium" htmlFor="name">{t('auth.name')}</label>
           <input
             id="name"
             type="text"
@@ -61,7 +65,7 @@ export default function SignUp() {
             required
           />
           
-          <label className="text-white/90 text-sm font-medium" htmlFor="email">Email</label>
+          <label className="text-white/90 text-sm font-medium" htmlFor="email">{t('auth.email')}</label>
           <input
             id="email"
             type="email"
@@ -72,7 +76,7 @@ export default function SignUp() {
             required
           />
           
-          <label className="text-white/90 text-sm font-medium" htmlFor="password">Password</label>
+          <label className="text-white/90 text-sm font-medium" htmlFor="password">{t('auth.password')}</label>
           <input
             id="password"
             type="password"
@@ -83,11 +87,11 @@ export default function SignUp() {
             required
           />
           
-          <label className="text-white/90 text-sm font-medium" htmlFor="company">Company (Optional)</label>
+          <label className="text-white/90 text-sm font-medium" htmlFor="company">{t('auth.company')}</label>
           <input
             id="company"
             type="text"
-            placeholder="Enter your company name (optional)"
+            placeholder={t('auth.companyPlaceholder')}
             className="auth-input"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
@@ -98,20 +102,20 @@ export default function SignUp() {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? 'Creating Profile...' : 'Create Profile'}
+            {loading ? t('common.loading') : t('auth.signUp')}
           </button>
         </form>
         
         <p className="mt-6 text-white/80 text-sm">
-          Already have an account?{' '}
-          <a href="/sign-in" className="text-white underline font-medium hover:text-blue-200">Sign In</a>
+          {t('auth.haveAccount')}{' '}
+          <a href="/sign-in" className="text-white underline font-medium hover:text-blue-200">{t('auth.signIn')}</a>
         </p>
       </div>
       
       <button
         className="absolute top-4 right-4 bg-white/40 rounded-full p-2 hover:bg-white/60 transition-colors"
         onClick={toggleTheme}
-        aria-label="Toggle dark mode"
+        aria-label={t('settings.darkMode')}
         type="button"
       >
         {dark ? (

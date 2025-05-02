@@ -7,6 +7,8 @@ import { useTheme } from '../providers/ThemeProvider';
 import Picker from '@emoji-mart/react';
 import emojiData from '@emoji-mart/data';
 import TypewriterEffect from 'react-typewriter-effect';
+import { useLanguage } from '../../lib/LanguageContext';
+import { useTranslation } from '../../lib/i18n';
 
 // Message type
 interface Message {
@@ -94,6 +96,8 @@ function VoiceModal({ open, mode, onClose, onToggleRecord }: {
 const Chat = () => {
   const { user, signOut } = useSupabase();
   const { dark, toggleTheme } = useTheme();
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -163,8 +167,8 @@ const Chat = () => {
           const knowledgeText = await knowledgeRes.text();
           console.log('Instructions:', instructionsText);
           console.log('Knowledge:', knowledgeText);
-          // Use a specific, creative prompt for the greeting
-          const greetingPrompt = `Gere uma saudação criativa, calorosa e original para um novo utilizador. Use as INSTRUÇÕES para definir o tom e estilo da mensagem, e a BASE DE CONHECIMENTO para incorporar informações específicas sobre a Dengun e seus serviços. Seja original e não copie nenhum exemplo das instruções. A saudação deve refletir a personalidade profissional e acolhedora da Dengun, mencionando alguns dos serviços principais e convidando o utilizador a explorar como podemos ajudar.`;
+          // Use a specific, creative prompt for the greeting based on the current language
+          const greetingPrompt = `Generate a creative, warm, and original greeting for a new user in ${language}. Use the INSTRUCTIONS to define the tone and style of the message, and the KNOWLEDGE BASE to incorporate specific information about Dengun and its services. Be original and do not copy any examples from the instructions. The greeting should reflect Dengun's professional and welcoming personality, mentioning some of the main services and inviting the user to explore how we can help.`;
           console.log('Prompt sent to API:', greetingPrompt);
           const res = await fetch('/api/chatgpt', {
             method: 'POST',
@@ -176,7 +180,7 @@ const Chat = () => {
           setMessages([
             {
               id: 'welcome',
-              content: data.reply && data.reply.trim() ? data.reply : '[ERRO] Não foi possível gerar uma saudação criativa.',
+              content: data.reply && data.reply.trim() ? data.reply : t('chat.greeting'),
               user: 'bot',
               created_at: new Date().toISOString(),
             },
@@ -185,7 +189,7 @@ const Chat = () => {
           setMessages([
             {
               id: 'welcome',
-              content: 'Olá! Seja bem-vindo ao nosso chat. Como posso ajudá-lo hoje?',
+              content: t('chat.greeting'),
               user: 'bot',
               created_at: new Date().toISOString(),
             },
@@ -196,7 +200,7 @@ const Chat = () => {
       })();
     }
     // eslint-disable-next-line
-  }, []);
+  }, [language]);
 
   // Play TTS audio for AI response (used for explicit voice mode with modal)
   const playTTS = async (text: string, onEnd?: () => void) => {
@@ -515,14 +519,14 @@ const Chat = () => {
     <div className="bg-auth-gradient min-h-screen flex items-center justify-center">
       <div className="w-full max-w-2xl h-[90vh] flex flex-col rounded-3xl shadow-2xl border border-white/30">
         <header className="p-6 flex justify-between items-center relative border-b border-white/20">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white drop-shadow">Assistente IA</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600 dark:text-white/80">{user.email}</span>
             <div className="relative">
               <button
                 onClick={() => setSettingsOpen((v) => !v)}
                 className="p-2 rounded-full bg-white/30 hover:bg-white/50 text-gray-800 dark:text-white focus:outline-none"
-                aria-label="Abrir configurações"
+                aria-label={t('settings.title')}
               >
                 <FaCog className="text-xl" />
               </button>
@@ -542,7 +546,7 @@ const Chat = () => {
                         <path strokeLinecap='round' strokeLinejoin='round' d='M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z' />
                       </svg>
                     )}
-                    {dark ? 'Modo Claro' : 'Modo Escuro'}
+                    {dark ? t('settings.lightMode') : t('settings.darkMode')}
                   </button>
                   <button
                     onClick={handleSignOut}
@@ -551,7 +555,7 @@ const Chat = () => {
                     <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5'>
                       <path strokeLinecap='round' strokeLinejoin='round' d='M15.75 9V5.25A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25V9m7.5 0v10.5A2.25 2.25 0 0113.5 21h-3a2.25 2.25 0 01-2.25-2.25V9m7.5 0H18a2.25 2.25 0 012.25 2.25v7.5A2.25 2.25 0 0118 21h-12a2.25 2.25 0 01-2.25-2.25v-7.5A2.25 2.25 0 016 9h1.5' />
                     </svg>
-                    Sair
+                    {t('auth.signOut') || 'Sair'}
                   </button>
                 </div>
               )}
@@ -565,7 +569,7 @@ const Chat = () => {
           {greetingLoading ? (
             <div className="flex justify-center items-center py-8">
               <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></span>
-              <span className="ml-3 text-white/80">Aguarde, carregando saudação...</span>
+              <span className="ml-3 text-white/80">{t('chat.greetingLoading')}</span>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -674,7 +678,7 @@ const Chat = () => {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Envie uma mensagem..."
+              placeholder={t('chat.typeMessage')}
               className="flex-1 bg-transparent outline-none px-2 py-2 text-white dark:text-white placeholder-gray-200 dark:placeholder-gray-300"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}

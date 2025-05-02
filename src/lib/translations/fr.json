@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier"
+  },
+  "chat": {
+    "send": "Envoyer",
+    "typeMessage": "Tapez un message...",
+    "newChat": "Nouvelle Conversation",
+    "deleteChat": "Supprimer la Conversation",
+    "renameChat": "Renommer la Conversation",
+    "addComment": "Ajouter un Commentaire",
+    "writeComment": "Écrivez votre commentaire...",
+    "submit": "Envoyer",
+    "like": "J'aime",
+    "dislike": "Je n'aime pas",
+    "comment": "Commenter",
+    "greeting": "Bonjour ! Comment puis-je vous aider aujourd'hui ?",
+    "greetingLoading": "Chargement de la salutation...",
+    "voiceMode": {
+      "idle": "Mode Vocal",
+      "recording": "Enregistrement...",
+      "aiSpeaking": "IA en train de parler..."
+    },
+    "assistantTitle": "Assistant IA"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "theme": "Thème",
+    "darkMode": "Mode Sombre",
+    "lightMode": "Mode Clair"
+  },
+  "auth": {
+    "signIn": "Se Connecter",
+    "signUp": "S'inscrire",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas de compte ?",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "signInWithGoogle": "Se connecter avec Google",
+    "signUpWithGoogle": "S'inscrire avec Google",
+    "or": "ou",
+    "invalidEmail": "Veuillez entrer une adresse e-mail valide",
+    "invalidPassword": "Le mot de passe doit contenir au moins 6 caractères",
+    "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+    "signInError": "Erreur de connexion",
+    "signUpError": "Erreur d'inscription",
+    "signInSuccess": "Connexion réussie",
+    "signUpSuccess": "Inscription réussie",
+    "name": "Nom",
+    "company": "Entreprise (Optionnel)",
+    "companyPlaceholder": "Entrez le nom de votre entreprise (optionnel)",
+    "signOut": "Se Déconnecter"
+  }
+} 

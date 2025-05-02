@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten",
+    "retry": "Wiederholen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten"
+  },
+  "chat": {
+    "send": "Senden",
+    "typeMessage": "Nachricht eingeben...",
+    "newChat": "Neuer Chat",
+    "deleteChat": "Chat löschen",
+    "renameChat": "Chat umbenennen",
+    "addComment": "Kommentar hinzufügen",
+    "writeComment": "Schreiben Sie Ihren Kommentar...",
+    "submit": "Absenden",
+    "like": "Gefällt mir",
+    "dislike": "Gefällt mir nicht",
+    "comment": "Kommentieren",
+    "greeting": "Hallo! Wie kann ich Ihnen heute helfen?",
+    "greetingLoading": "Begrüßung wird geladen...",
+    "voiceMode": {
+      "idle": "Sprachmodus",
+      "recording": "Aufnahme...",
+      "aiSpeaking": "KI spricht..."
+    },
+    "assistantTitle": "KI-Assistent"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "theme": "Design",
+    "darkMode": "Dunkelmodus",
+    "lightMode": "Hellmodus"
+  },
+  "auth": {
+    "signIn": "Anmelden",
+    "signUp": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Kein Konto?",
+    "haveAccount": "Haben Sie bereits ein Konto?",
+    "signInWithGoogle": "Mit Google anmelden",
+    "signUpWithGoogle": "Mit Google registrieren",
+    "or": "oder",
+    "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "invalidPassword": "Das Passwort muss mindestens 6 Zeichen lang sein",
+    "passwordsDontMatch": "Die Passwörter stimmen nicht überein",
+    "signInError": "Anmeldefehler",
+    "signUpError": "Registrierungsfehler",
+    "signInSuccess": "Anmeldung erfolgreich",
+    "signUpSuccess": "Registrierung erfolgreich",
+    "name": "Name",
+    "company": "Firma (Optional)",
+    "companyPlaceholder": "Geben Sie den Namen Ihrer Firma ein (optional)",
+    "signOut": "Abmelden"
+  }
+} 

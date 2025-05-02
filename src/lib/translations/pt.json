@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro",
+    "retry": "Tentar novamente",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar"
+  },
+  "chat": {
+    "send": "Enviar",
+    "typeMessage": "Digite uma mensagem...",
+    "newChat": "Novo Chat",
+    "deleteChat": "Excluir Chat",
+    "renameChat": "Renomear Chat",
+    "addComment": "Adicionar Comentário",
+    "writeComment": "Escreva seu comentário...",
+    "submit": "Enviar",
+    "like": "Curtir",
+    "dislike": "Não Curtir",
+    "comment": "Comentar",
+    "greeting": "Olá! Como posso ajudar você hoje?",
+    "greetingLoading": "Carregando saudação...",
+    "voiceMode": {
+      "idle": "Modo Voz",
+      "recording": "Gravando...",
+      "aiSpeaking": "IA Falando..."
+    },
+    "assistantTitle": "Assistente IA"
+  },
+  "settings": {
+    "title": "Configurações",
+    "language": "Idioma",
+    "theme": "Tema",
+    "darkMode": "Modo Escuro",
+    "lightMode": "Modo Claro"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Cadastrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "confirmPassword": "Confirmar Senha",
+    "forgotPassword": "Esqueceu a senha?",
+    "noAccount": "Não tem uma conta?",
+    "haveAccount": "Já tem uma conta?",
+    "signInWithGoogle": "Entrar com Google",
+    "signUpWithGoogle": "Cadastrar com Google",
+    "or": "ou",
+    "invalidEmail": "Por favor, insira um e-mail válido",
+    "invalidPassword": "A senha deve ter pelo menos 6 caracteres",
+    "passwordsDontMatch": "As senhas não coincidem",
+    "signInError": "Erro ao entrar",
+    "signUpError": "Erro ao cadastrar",
+    "signInSuccess": "Login realizado com sucesso",
+    "signUpSuccess": "Cadastro realizado com sucesso",
+    "name": "Nome",
+    "company": "Empresa (Opcional)",
+    "companyPlaceholder": "Digite o nome da sua empresa (opcional)",
+    "signOut": "Sair"
+  }
+} 

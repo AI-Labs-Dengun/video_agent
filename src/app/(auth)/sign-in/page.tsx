@@ -3,11 +3,15 @@ import React, { useState } from 'react';
 import { useTheme } from "../../providers/ThemeProvider";
 import { useSupabase } from "../../providers/SupabaseProvider";
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '../../../lib/LanguageContext';
+import { useTranslation } from '../../../lib/i18n';
 
 export default function SignIn() {
   const { dark, toggleTheme } = useTheme();
   const { signIn } = useSupabase();
   const router = useRouter();
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,13 +27,13 @@ export default function SignIn() {
       const { error } = await signIn(email, password);
       
       if (error) {
-        setError(error.message || 'Failed to sign in');
+        setError(error.message || t('auth.signInError'));
       } else {
         // Redirect to chat page on successful sign in
         router.push('/chat');
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      setError(err.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -38,8 +42,8 @@ export default function SignIn() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-gradient relative">
       <div className="auth-card">
-        <h1 className="text-3xl font-semibold mb-2 text-white">Welcome back</h1>
-        <p className="mb-6 text-white/80">Sign in with your email</p>
+        <h1 className="text-3xl font-semibold mb-2 text-white">{t('auth.signIn')}</h1>
+        <p className="mb-6 text-white/80">{t('auth.signInWithGoogle')}</p>
         
         {error && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-200 text-sm">
@@ -48,7 +52,7 @@ export default function SignIn() {
         )}
         
         <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit}>
-          <label className="text-white/90 text-sm font-medium" htmlFor="email">Email</label>
+          <label className="text-white/90 text-sm font-medium" htmlFor="email">{t('auth.email')}</label>
           <input
             id="email"
             type="email"
@@ -59,7 +63,7 @@ export default function SignIn() {
             required
           />
           
-          <label className="text-white/90 text-sm font-medium" htmlFor="password">Password</label>
+          <label className="text-white/90 text-sm font-medium" htmlFor="password">{t('auth.password')}</label>
           <input
             id="password"
             type="password"
@@ -75,20 +79,20 @@ export default function SignIn() {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('common.loading') : t('auth.signIn')}
           </button>
         </form>
         
         <p className="mt-6 text-white/80 text-sm">
-          Don't have an account?{' '}
-          <a href="/sign-up" className="text-white underline font-medium hover:text-blue-200">Sign Up</a>
+          {t('auth.noAccount')}{' '}
+          <a href="/sign-up" className="text-white underline font-medium hover:text-blue-200">{t('auth.signUp')}</a>
         </p>
       </div>
       
       <button
         className="absolute top-4 right-4 bg-white/40 rounded-full p-2 hover:bg-white/60 transition-colors"
         onClick={toggleTheme}
-        aria-label="Toggle dark mode"
+        aria-label={t('settings.darkMode')}
         type="button"
       >
         {dark ? (

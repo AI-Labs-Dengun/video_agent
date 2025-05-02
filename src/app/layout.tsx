@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { SupabaseProvider } from "./providers/SupabaseProvider";
 import { headers } from "next/headers";
+import { LanguageProvider } from '../lib/LanguageContext';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -51,11 +52,13 @@ export default async function RootLayout({
         `}} />
       </head>
       <body className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-        <ThemeProvider>
-          <SupabaseProvider>
-            {children}
-          </SupabaseProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <SupabaseProvider>
+              {children}
+            </SupabaseProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
