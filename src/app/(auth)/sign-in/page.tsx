@@ -6,17 +6,15 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../../lib/LanguageContext';
 import { useTranslation } from '../../../lib/i18n';
 
-export default function SignUp() {
+export default function SignIn() {
   const { dark, toggleTheme } = useTheme();
-  const { signUp } = useSupabase();
+  const { signIn } = useSupabase();
   const router = useRouter();
   const { language } = useLanguage();
   const { t } = useTranslation(language);
   
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [company, setCompany] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,12 +24,12 @@ export default function SignUp() {
     setLoading(true);
     
     try {
-      const { error } = await signUp(email, password, name, company);
+      const { error } = await signIn(email, password);
       
       if (error) {
-        setError(error.message || t('auth.signUpError'));
+        setError(error.message || t('auth.signInError'));
       } else {
-        // Redirect to chat page on successful sign up
+        // Redirect to chat page on successful sign in
         router.push('/chat');
       }
     } catch (err: any) {
@@ -44,8 +42,8 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-gradient relative">
       <div className="auth-card">
-        <h1 className="text-3xl font-semibold mb-2 text-white">{t('auth.signUp')}</h1>
-        <p className="mb-6 text-white/80">{t('auth.signUpWithGoogle')}</p>
+        <h1 className="text-3xl font-semibold mb-2 text-white">{t('auth.signIn')}</h1>
+        <p className="mb-6 text-white/80">{t('auth.signInWithGoogle')}</p>
         
         {error && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-200 text-sm">
@@ -54,17 +52,6 @@ export default function SignUp() {
         )}
         
         <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit}>
-          <label className="text-white/90 text-sm font-medium" htmlFor="name">{t('auth.name')}</label>
-          <input
-            id="name"
-            type="text"
-            placeholder="John Doe"
-            className="auth-input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          
           <label className="text-white/90 text-sm font-medium" htmlFor="email">{t('auth.email')}</label>
           <input
             id="email"
@@ -87,28 +74,18 @@ export default function SignUp() {
             required
           />
           
-          <label className="text-white/90 text-sm font-medium" htmlFor="company">{t('auth.company')}</label>
-          <input
-            id="company"
-            type="text"
-            placeholder={t('auth.companyPlaceholder')}
-            className="auth-input"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-          />
-          
           <button
             type="submit"
             className="auth-button"
             disabled={loading}
           >
-            {loading ? t('common.loading') : t('auth.signUp')}
+            {loading ? t('common.loading') : t('auth.signIn')}
           </button>
         </form>
         
         <p className="mt-6 text-white/80 text-sm">
-          {t('auth.haveAccount')}{' '}
-          <a href="/sign-in" className="text-white underline font-medium hover:text-blue-200">{t('auth.signIn')}</a>
+          {t('auth.noAccount')}{' '}
+          <a href="/sign-up" className="text-white underline font-medium hover:text-blue-200">{t('auth.signUp')}</a>
         </p>
       </div>
       

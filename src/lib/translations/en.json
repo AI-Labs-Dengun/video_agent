@@ -1,0 +1,73 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "chat": {
+    "send": "Send",
+    "typeMessage": "Type a message...",
+    "newChat": "New Chat",
+    "deleteChat": "Delete Chat",
+    "renameChat": "Rename Chat",
+    "addComment": "Add Comment",
+    "writeComment": "Write your comment...",
+    "submit": "Submit",
+    "like": "Like",
+    "dislike": "Dislike",
+    "comment": "Comment",
+    "greeting": "Hello! How can I help you today?",
+    "greetingLoading": "Loading greeting...",
+    "voiceMode": {
+      "idle": "Voice Mode",
+      "recording": "Recording...",
+      "aiSpeaking": "AI Speaking..."
+    },
+    "assistantTitle": "AI Assistant",
+    "tooltips": [
+      "How can I scale my startup?",
+      "I need an MVP for my idea",
+      "I want to improve my SEO and digital marketing",
+      "I need a website for my business",
+      "How can I optimize my online presence?",
+      "I want to develop a mobile app",
+      "I need help with data analysis",
+      "How can AI help my business?"
+    ]
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "or": "or",
+    "invalidEmail": "Please enter a valid email",
+    "invalidPassword": "Password must be at least 6 characters",
+    "passwordsDontMatch": "Passwords don't match",
+    "signInError": "Error signing in",
+    "signUpError": "Error signing up",
+    "signInSuccess": "Successfully signed in",
+    "signUpSuccess": "Successfully signed up",
+    "name": "Name",
+    "company": "Company (Optional)",
+    "companyPlaceholder": "Enter your company name (optional)",
+    "signOut": "Sign Out"
+  }
+} 
