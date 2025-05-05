@@ -77,9 +77,9 @@ html.dark .auth-card {
 }
 
 html.dark .auth-input {
-  background: #181830;
+  background: transparent;
   color: #ededed;
-  border-color: #333366;
+  border-color: #fff;
 }
 
 html.dark .auth-button {
@@ -115,6 +115,8 @@ html.dark input, html.dark textarea {
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   outline: none;
+  background: transparent;
+  color: #23234a;
 }
 
 .auth-input:focus {
@@ -151,7 +153,12 @@ input, textarea {
   color: #23234a;
 }
 
-::placeholder {
+input::placeholder, textarea::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+html.dark input::placeholder, html.dark textarea::placeholder {
   color: #6b7280;
   opacity: 1;
 }

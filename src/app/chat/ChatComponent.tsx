@@ -505,7 +505,7 @@ const ChatComponent = () => {
 
   return (
     <div className="bg-auth-gradient min-h-screen flex items-center justify-center">
-      <div className="w-full max-w-2xl h-[90vh] flex flex-col rounded-3xl shadow-2xl border border-white/30">
+      <div className="w-full h-screen md:h-[90vh] md:max-w-2xl flex flex-col rounded-none md:rounded-3xl shadow-2xl border border-white/30">
         <header className="p-6 flex justify-between items-center relative border-b border-white/20">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
           <div className="flex items-center gap-4">
