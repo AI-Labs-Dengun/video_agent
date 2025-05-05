@@ -91,6 +91,7 @@ html.dark .auth-button:hover {
 
 html.dark input, html.dark textarea {
   color: #fff;
+  caret-color: #fff;
 }
 
 .bg-auth-gradient {
@@ -154,12 +155,12 @@ input, textarea {
 }
 
 input::placeholder, textarea::placeholder {
-  color: #6b7280;
+  color: #374151;
   opacity: 1;
 }
 
 html.dark input::placeholder, html.dark textarea::placeholder {
-  color: #6b7280;
+  color: #cbd5e1;
   opacity: 1;
 }
 

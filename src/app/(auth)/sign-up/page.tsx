@@ -5,10 +5,11 @@ import { useSupabase } from "../../providers/SupabaseProvider";
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../../lib/LanguageContext';
 import { useTranslation } from '../../../lib/i18n';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function SignUp() {
   const { dark, toggleTheme } = useTheme();
-  const { signUp } = useSupabase();
+  const { signUp, signIn } = useSupabase();
   const router = useRouter();
   const { language } = useLanguage();
   const { t } = useTranslation(language);
@@ -19,11 +20,16 @@ export default function SignUp() {
   const [company, setCompany] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    setShowConfirmModal(false);
+    setConfirmError(null);
     
     try {
       const { error } = await signUp(email, password, name, company);
@@ -31,11 +37,27 @@ export default function SignUp() {
       if (error) {
         setError(error.message || t('auth.signUpError'));
       } else {
-        // Redirect to chat page on successful sign up
-        router.push('/chat');
+        setShowConfirmModal(true);
       }
     } catch (err: any) {
       setError(err.message || t('common.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleContinueAfterConfirm = async () => {
+    setConfirmError(null);
+    setLoading(true);
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        setConfirmError(t('auth.confirmEmailError') || 'Please confirm your email before continuing.');
+      } else {
+        router.push('/chat');
+      }
+    } catch (err: any) {
+      setConfirmError(t('auth.confirmEmailError') || 'Please confirm your email before continuing.');
     } finally {
       setLoading(false);
     }
@@ -101,15 +123,26 @@ export default function SignUp() {
             </div>
             <div className="flex flex-col gap-y-1">
               <label className="text-white/90 text-sm font-medium" htmlFor="password">{t('auth.password')}</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className="auth-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="auth-input pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
             <div className="flex flex-col gap-y-1">
               <label className="text-white/90 text-sm font-medium" htmlFor="company">{t('auth.company')}</label>
@@ -155,6 +188,32 @@ export default function SignUp() {
           </svg>
         )}
       </button>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-auth-gradient bg-opacity-80 rounded-2xl shadow-2xl p-8 max-w-sm w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
+            <button
+              className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
+              onClick={() => setShowConfirmModal(false)}
+              aria-label="Close"
+              type="button"
+            >
+              &times;
+            </button>
+            <h2 className="text-lg font-bold text-white mb-4 drop-shadow">{t('auth.confirmEmailTitle')}</h2>
+            <p className="text-white/90 mb-4 text-center drop-shadow">{t('auth.confirmEmailMessage')}</p>
+            {confirmError && <div className="mb-2 text-red-300 text-sm text-center">{confirmError}</div>}
+            <button
+              className="auth-button mt-2"
+              onClick={handleContinueAfterConfirm}
+              disabled={loading}
+            >
+              {loading ? t('common.loading') : t('auth.confirmEmailCta')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

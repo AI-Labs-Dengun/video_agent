@@ -5,6 +5,7 @@ import { useSupabase } from "../../providers/SupabaseProvider";
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../../lib/LanguageContext';
 import { useTranslation } from '../../../lib/i18n';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function SignIn() {
   const { dark, toggleTheme } = useTheme();
@@ -17,6 +18,7 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,15 +89,26 @@ export default function SignIn() {
             </div>
             <div className="flex flex-col gap-y-1">
               <label className="text-white/90 text-sm font-medium" htmlFor="password">{t('auth.password')}</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className="auth-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="auth-input pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
             
             <button
