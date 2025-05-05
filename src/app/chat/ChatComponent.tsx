@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog } from 'react-icons/fa';
+import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import { useSupabase } from '../providers/SupabaseProvider';
 import { useTheme } from '../providers/ThemeProvider';
 import { useLanguage } from '../../lib/language';
@@ -58,6 +58,7 @@ const ChatComponent = () => {
   const [ttsLoadingMsgId, setTtsLoadingMsgId] = useState<string | null>(null);
   const [tooltips, setTooltips] = useState<string[]>([]);
   const [showTooltips, setShowTooltips] = useState(true);
+  const [showTooltipsModal, setShowTooltipsModal] = useState(false);
 
   const handleScroll = () => {
     const el = chatContainerRef.current;
@@ -507,22 +508,21 @@ const ChatComponent = () => {
     <div className="bg-auth-gradient min-h-screen flex items-center justify-center">
       <div className="w-full h-screen md:h-[90vh] md:max-w-2xl flex flex-col rounded-none md:rounded-3xl shadow-2xl border border-white/30">
         <header className="p-6 flex justify-between items-center relative border-b border-white/20">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
+          <h1 className="text-2xl font-bold text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-white/80">{user.email}</span>
             <div className="relative">
               <button
                 onClick={() => setSettingsOpen((v) => !v)}
                 className="p-2 rounded-full bg-white/30 hover:bg-white/50 text-gray-800 dark:text-white focus:outline-none"
                 aria-label={t('settings.title')}
               >
-                <FaCog className="text-xl" />
+                <FaCog className="text-xl text-white" />
               </button>
               {settingsOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#23234a] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md">
                   <button
                     onClick={toggleTheme}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-[#181830] rounded-t-xl"
+                    className="w-full flex items-center gap-2 px-4 py-3 text-white hover:bg-white/10 rounded-t-xl"
                   >
                     {dark ? (
                       <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5 text-yellow-400'>
@@ -538,11 +538,9 @@ const ChatComponent = () => {
                   </button>
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-[#181830] rounded-b-xl"
+                    className="w-full flex items-center gap-2 px-4 py-3 text-white hover:bg-white/10 rounded-b-xl"
                   >
-                    <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5'>
-                      <path strokeLinecap='round' strokeLinejoin='round' d='M15.75 9V5.25A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25V9m7.5 0v10.5A2.25 2.25 0 0113.5 21h-3a2.25 2.25 0 01-2.25-2.25V9m7.5 0H18a2.25 2.25 0 012.25 2.25v7.5A2.25 2.25 0 0118 21h-12a2.25 2.25 0 01-2.25-2.25v-7.5A2.25 2.25 0 016 9h1.5' />
-                    </svg>
+                    <FaSignOutAlt className="w-5 h-5 text-black dark:text-white" />
                     {t('auth.signOut') || 'Sair'}
                   </button>
                 </div>
@@ -568,11 +566,11 @@ const ChatComponent = () => {
                 >
                   {msg.user === 'bot' && (
                     <div className="flex flex-col items-end mr-2 justify-center">
-                      <FaRobot className="text-3xl text-blue-600 dark:text-blue-200" />
+                      <FaRobot className="text-3xl text-white" />
                     </div>
                   )}
                   <div
-                    className={`rounded-xl px-5 py-3 pb-6 border-[0.5px] border-white text-white bg-transparent max-w-[70%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
+                    className={`rounded-xl px-5 py-3 pb-6 border-[0.5px] border-white text-white bg-transparent max-w-[90%] md:max-w-[70%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
                   >
                     <div className="flex items-center gap-2 mb-4">
                       {msg.user === 'bot' ? (
@@ -585,42 +583,42 @@ const ChatComponent = () => {
                         <span>{msg.content}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-3 relative">
-                      {msg.user === 'bot' && (
-                        <>
-                          <button
-                            className={`transition-colors ${feedback[msg.id] === 'like' ? 'text-green-400' : 'text-white opacity-80'} hover:text-green-400`}
-                            onClick={() => handleFeedback(msg.id, 'like', msg.content)}
-                          >
-                            <FaRegThumbsUp className="text-lg" />
-                          </button>
-                          <button
-                            className={`transition-colors ${feedback[msg.id] === 'dislike' ? 'text-red-400' : 'text-white opacity-80'} hover:text-red-400`}
-                            onClick={() => handleFeedback(msg.id, 'dislike', msg.content)}
-                          >
-                            <FaRegThumbsDown className="text-lg" />
-                          </button>
-                          <button
-                            className={`hover:text-blue-300 transition-colors`}
-                            onClick={async () => {
-                              setTtsLoadingMsgId(msg.id);
-                              await playTTS(msg.content, () => setTtsLoadingMsgId(null));
-                              setTtsLoadingMsgId(null);
-                            }}
-                            disabled={ttsLoadingMsgId === msg.id}
-                          >
-                            {ttsLoadingMsgId === msg.id ? (
-                              <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 inline-block"></span>
-                            ) : (
-                              <FaVolumeUp className="text-lg text-white opacity-80" />
-                            )}
-                          </button>
-                          <button className="hover:text-blue-300 transition-colors" onClick={() => setCommentModal({ open: true, message: { id: msg.id, content: msg.content } })}><FaRegCommentDots className="text-lg text-white opacity-80" /></button>
-                        </>
-                      )}
-                      {((msg.user === 'bot' && !isTypewriterActive && msg.id === messages[messages.length-1]?.id) || msg.user === 'me') && (
-                        <span className="absolute bottom-0 right-4 text-xs opacity-60">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      )}
+                    <div className="flex items-center gap-2 mt-5 pb-1 pt-3 relative justify-between">
+                      <div className="flex items-center gap-2">
+                        {msg.user === 'bot' && (
+                          <>
+                            <button
+                              className={`transition-colors ${feedback[msg.id] === 'like' ? 'text-green-400' : 'text-white'} hover:text-green-400`}
+                              onClick={() => handleFeedback(msg.id, 'like', msg.content)}
+                            >
+                              <FaRegThumbsUp className="text-lg" />
+                            </button>
+                            <button
+                              className={`transition-colors ${feedback[msg.id] === 'dislike' ? 'text-red-400' : 'text-white'} hover:text-red-400`}
+                              onClick={() => handleFeedback(msg.id, 'dislike', msg.content)}
+                            >
+                              <FaRegThumbsDown className="text-lg" />
+                            </button>
+                            <button
+                              className={`hover:text-blue-300 transition-colors`}
+                              onClick={async () => {
+                                setTtsLoadingMsgId(msg.id);
+                                await playTTS(msg.content, () => setTtsLoadingMsgId(null));
+                                setTtsLoadingMsgId(null);
+                              }}
+                              disabled={ttsLoadingMsgId === msg.id}
+                            >
+                              {ttsLoadingMsgId === msg.id ? (
+                                <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 inline-block"></span>
+                              ) : (
+                                <FaVolumeUp className="text-lg text-white" />
+                              )}
+                            </button>
+                            <button className="hover:text-blue-300 transition-colors" onClick={() => setCommentModal({ open: true, message: { id: msg.id, content: msg.content } })}><FaRegCommentDots className="text-lg text-white" /></button>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-xs opacity-60 whitespace-nowrap">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
                   {msg.user === 'me' && (
@@ -637,7 +635,15 @@ const ChatComponent = () => {
         {showTooltips && tooltips.length > 0 && (
           <div className="w-full px-6">
             <div className="w-full border-t border-white/30 mb-4" />
-            <div className="flex flex-col gap-2 mb-4 items-center w-full">
+            <div className="flex flex-col gap-2 mb-4 items-center w-full md:hidden">
+              <button
+                className="w-full flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
+                onClick={() => setShowTooltipsModal(true)}
+              >
+                Sugestões
+              </button>
+            </div>
+            <div className="hidden md:flex flex-col gap-2 mb-4 items-center w-full">
               <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
                 {tooltips.slice(0, 2).map((tip, idx) => (
                   <button
@@ -661,69 +667,95 @@ const ChatComponent = () => {
                 ))}
               </div>
             </div>
+            {showTooltipsModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                <div className="bg-auth-gradient bg-opacity-90 rounded-2xl shadow-2xl p-6 max-w-xs w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
+                  <button
+                    className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
+                    onClick={() => setShowTooltipsModal(false)}
+                    aria-label="Close"
+                    type="button"
+                  >
+                    &times;
+                  </button>
+                  <h2 className="text-lg font-bold text-white mb-4 drop-shadow">Sugestões</h2>
+                  <div className="flex flex-col gap-3 w-full">
+                    {tooltips.slice(0, 4).map((tip, idx) => (
+                      <button
+                        key={idx}
+                        className="w-full px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
+                        onClick={() => { handleTooltipClick(tip); setShowTooltipsModal(false); }}
+                      >
+                        {tip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         <footer className="w-full p-6 border-t border-white/20">
           <form
             onSubmit={handleSendMessage}
-            className="flex items-center gap-3 bg-transparent rounded-2xl px-4 py-2 shadow-md border border-white/30"
+            className="flex items-center gap-3 bg-transparent rounded-2xl px-4 py-2 shadow-md border border-white/30 relative"
           >
-            <div className="relative">
+            <div className="flex items-center w-full">
               <button
                 type="button"
-                className="text-xl text-blue-600 dark:text-blue-200 hover:text-blue-400"
+                className="hidden md:inline-flex text-xl text-white hover:text-gray-200 mr-2"
                 onClick={() => setShowEmojiPicker((v) => !v)}
                 tabIndex={-1}
               >
                 <FaRegSmile />
               </button>
-              {showEmojiPicker && (
-                <div className="absolute bottom-12 left-0 z-50">
-                  <EmojiPicker
-                    data={data}
-                    theme={dark ? 'dark' : 'light'}
-                    onEmojiSelect={(e: any) => {
-                      insertEmoji(e.native);
-                      setShowEmojiPicker(false);
-                    }}
-                  />
-                </div>
-              )}
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={t('chat.typeMessage')}
+                className="flex-1 bg-transparent outline-none px-2 py-2 text-white dark:text-white placeholder-gray-200 dark:placeholder-gray-300"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                disabled={loading}
+                style={{ background: 'transparent' }}
+                onBlur={() => setTimeout(() => setShowEmojiPicker(false), 200)}
+              />
+              <button
+                type="submit"
+                className="text-xl text-white hover:text-gray-200 disabled:opacity-50 ml-2"
+                disabled={!newMessage.trim() || loading}
+              >
+                <FaPaperPlane />
+              </button>
+              <button
+                type="button"
+                className="text-xl text-white hover:text-gray-200 ml-2"
+                onClick={() => {
+                  const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
+                  if (lastBotMsg) {
+                    setVoiceModalMode('loading');
+                    setVoiceModalOpen(true);
+                    playTTS(lastBotMsg.content, () => {
+                      setVoiceModalMode('ready-to-record');
+                    });
+                  }
+                }}
+              >
+                <FaMicrophone />
+              </button>
             </div>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={t('chat.typeMessage')}
-              className="flex-1 bg-transparent outline-none px-2 py-2 text-white dark:text-white placeholder-gray-200 dark:placeholder-gray-300"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              disabled={loading}
-              style={{ background: 'transparent' }}
-              onBlur={() => setTimeout(() => setShowEmojiPicker(false), 200)}
-            />
-            <button
-              type="submit"
-              className="text-xl text-blue-600 dark:text-blue-200 hover:text-blue-400 disabled:opacity-50"
-              disabled={!newMessage.trim() || loading}
-            >
-              <FaPaperPlane />
-            </button>
-            <button
-              type="button"
-              className="text-xl text-blue-600 dark:text-blue-200 hover:text-blue-400 ml-1"
-              onClick={() => {
-                const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
-                if (lastBotMsg) {
-                  setVoiceModalMode('loading');
-                  setVoiceModalOpen(true);
-                  playTTS(lastBotMsg.content, () => {
-                    setVoiceModalMode('ready-to-record');
-                  });
-                }
-              }}
-            >
-              <FaMicrophone />
-            </button>
+            {showEmojiPicker && (
+              <div className="absolute bottom-12 left-0 z-50">
+                <EmojiPicker
+                  data={data}
+                  theme={dark ? 'dark' : 'light'}
+                  onEmojiSelect={(e: any) => {
+                    insertEmoji(e.native);
+                    setShowEmojiPicker(false);
+                  }}
+                />
+              </div>
+            )}
           </form>
         </footer>
       </div>

@@ -25,7 +25,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white/10 border border-white/20 rounded-2xl p-6 w-full max-w-md backdrop-blur-md">
+      <div className="bg-auth-gradient bg-opacity-90 border border-white rounded-2xl p-6 w-full max-w-md backdrop-blur-md relative">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-white">
             {mode === 'ai-speaking' ? t('voice.aiSpeaking') :
@@ -36,17 +36,22 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors"
+            className="text-white/80 hover:text-white transition-colors absolute top-6 right-6"
           >
-            <FaTimes className="text-xl" />
+            <FaTimes className="text-xl text-white" />
           </button>
         </div>
-        
         <div className="flex flex-col items-center gap-6">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center relative overflow-visible">
+              {mode === 'ai-speaking' && (
+                <>
+                  <span className="absolute inset-0 rounded-full border-2 border-blue-400 animate-voice-wave1" />
+                  <span className="absolute inset-0 rounded-full border-2 border-blue-300 animate-voice-wave2" />
+                </>
+              )}
               {mode === 'ai-speaking' ? (
-                <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center z-10">
                   <FaVolumeUp className="text-white text-2xl" />
                 </div>
               ) : mode === 'thinking' ? (
@@ -67,38 +72,25 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
                 </div>
               )}
             </div>
-            {mode === 'recording' && (
-              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                {/* Removed extra label under stop icon */}
-              </div>
-            )}
           </div>
-
           {(mode === 'ready-to-record' || mode === 'recording') && (
             <button
               onClick={onToggleRecord}
-              className={`px-6 py-2 rounded-lg text-white font-medium transition-colors ${
-                mode === 'recording'
-                  ? 'bg-red-500/80 hover:bg-red-500'
-                  : 'bg-blue-500/80 hover:bg-blue-500'
-              }`}
+              className={`px-6 py-2 rounded bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:from-purple-700 hover:to-blue-700 transition-colors duration-200 w-auto`}
             >
               {mode === 'recording' ? t('voice.stop') : t('voice.start')}
             </button>
           )}
-
           {mode === 'ai-speaking' && (
             <div className="text-white/80 text-center">
               {t('voice.aiSpeaking')}
             </div>
           )}
-
           {mode === 'thinking' && (
             <div className="text-white/80 text-center">
               {t('voice.aiThinking')}
             </div>
           )}
-
           {mode === 'loading' && (
             <div className="text-white/80 text-center">
               {t('voice.loading')}
