@@ -69,5 +69,13 @@
     "company": "Empresa (Opcional)",
     "companyPlaceholder": "Digite o nome da sua empresa (opcional)",
     "signOut": "Sair"
+  },
+  "voice": {
+    "title": "Gravação de Voz",
+    "aiSpeaking": "IA Falando...",
+    "aiThinking": "IA Pensando...",
+    "loading": "Carregando áudio...",
+    "start": "Iniciar Gravação",
+    "stop": "Parar Gravação"
   }
 } 

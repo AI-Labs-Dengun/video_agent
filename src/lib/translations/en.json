@@ -69,5 +69,13 @@
     "company": "Company (Optional)",
     "companyPlaceholder": "Enter your company name (optional)",
     "signOut": "Sign Out"
+  },
+  "voice": {
+    "title": "Voice Recording",
+    "aiSpeaking": "AI Speaking...",
+    "aiThinking": "AI Thinking...",
+    "loading": "Loading audio...",
+    "start": "Start Recording",
+    "stop": "Stop Recording"
   }
 } 

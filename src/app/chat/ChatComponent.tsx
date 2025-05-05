@@ -1,11 +1,11 @@
 "use client";
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog } from 'react-icons/fa';
-import { useSupabase } from '../../lib/supabase';
-import { useTheme } from '../../lib/theme';
+import { useSupabase } from '../providers/SupabaseProvider';
+import { useTheme } from '../providers/ThemeProvider';
 import { useLanguage } from '../../lib/language';
-import { useTranslation } from '../../lib/i18n';
+import { useTranslation, Language } from '../../lib/i18n';
 import TypewriterEffect from '../../components/TypewriterEffect';
 import CommentModal from '../../components/CommentModal';
 import VoiceModal from '../../components/VoiceModal';
@@ -33,7 +33,7 @@ const ChatComponent = () => {
   const { user, signOut } = useSupabase();
   const { dark, toggleTheme } = useTheme();
   const { language } = useLanguage();
-  const { t } = useTranslation(language);
+  const { t } = useTranslation(language as Language);
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -49,7 +49,7 @@ const ChatComponent = () => {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
-  const [voiceModalMode, setVoiceModalMode] = useState<'ai-speaking' | 'ready-to-record' | 'recording'>('ai-speaking');
+  const [voiceModalMode, setVoiceModalMode] = useState<'ai-speaking' | 'ready-to-record' | 'recording' | 'thinking' | 'loading'>('ai-speaking');
   const [greetingLoading, setGreetingLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -146,7 +146,7 @@ const ChatComponent = () => {
 
   const playTTS = async (text: string, onEnd?: () => void) => {
     if (typeof window === 'undefined') return;
-    setVoiceModalMode('ai-speaking');
+    setVoiceModalMode('loading');
     setVoiceModalOpen(true);
     try {
       if (audioRef.current) {
@@ -167,6 +167,7 @@ const ChatComponent = () => {
         setVoiceModalMode('ready-to-record');
         if (onEnd) onEnd();
       };
+      setVoiceModalMode('ai-speaking');
       audio.play();
     } catch (err) {
       console.error('TTS error:', err);
@@ -286,6 +287,11 @@ const ChatComponent = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId, content, comment }),
       });
+      await fetch('/api/chatgpt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: comment }),
+      });
     } catch (e) {}
   };
 
@@ -302,86 +308,40 @@ const ChatComponent = () => {
     }, 0);
   };
 
+  const handleToggleRecord = () => {
+    console.log('handleToggleRecord called, current mode:', voiceModalMode);
+    handleFirstInteraction();
+    if (voiceModalMode === 'ready-to-record') {
+      startRecording();
+    } else if (voiceModalMode === 'recording') {
+      stopRecording();
+    }
+  };
+
   const startRecording = async () => {
+    console.log('startRecording called');
     if (typeof window === 'undefined') return;
-    setVoiceModalMode('recording');
-    setVoiceModalOpen(true);
     try {
+      setVoiceModalMode('recording');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
 
       mediaRecorder.onstop = async () => {
         console.log('Recording stopped, processing audio...');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         setAudioUrl(URL.createObjectURL(audioBlob));
-        setVoiceModalMode('ai-speaking');
-        setVoiceMode('idle');
-        try {
-          const formData = new FormData();
-          formData.append('audio', audioBlob, 'audio.wav');
-          const res = await fetch('/api/transcribe', {
-            method: 'POST',
-            body: formData,
-          });
-          const data = await res.json();
-          console.log('Transcription result:', data);
-          if (data.text) {
-            const userMsg = {
-              id: 'user-' + Date.now(),
-              content: data.text,
-              user: 'me' as 'me',
-              created_at: new Date().toISOString(),
-            };
-            setMessages((prev) => [...prev, userMsg]);
-            setLoading(true);
-            try {
-              const res = await fetch('/api/chatgpt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: data.text }),
-              });
-              const aiData = await res.json();
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: 'bot-' + Date.now(),
-                  content: aiData.reply || 'Desculpe, não consegui responder agora.',
-                  user: 'bot',
-                  created_at: new Date().toISOString(),
-                },
-              ]);
-              if (aiData.reply) {
-                playTTS(aiData.reply, () => {
-                  setVoiceModalMode('ready-to-record');
-                });
-              } else {
-                setVoiceModalMode('ready-to-record');
-              }
-            } catch (err) {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: 'bot-error-' + Date.now(),
-                  content: 'Erro ao conectar ao ChatGPT.',
-                  user: 'bot',
-                  created_at: new Date().toISOString(),
-                },
-              ]);
-              setVoiceModalMode('ready-to-record');
-            } finally {
-              setLoading(false);
-            }
-          } else {
-            setVoiceModalMode('ready-to-record');
-          }
-        } catch (err) {
-          console.error('Transcription error:', err);
-          setVoiceModalMode('ready-to-record');
-        }
+        handleAudioSubmit(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
       };
+
       mediaRecorder.start();
     } catch (err) {
       console.error('Recording error:', err);
@@ -390,17 +350,10 @@ const ChatComponent = () => {
   };
 
   const stopRecording = () => {
+    console.log('stopRecording called');
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      setVoiceModalMode('thinking');
       mediaRecorderRef.current.stop();
-    }
-  };
-
-  const handleToggleRecord = () => {
-    handleFirstInteraction();
-    if (voiceModalMode === 'ready-to-record') {
-      startRecording();
-    } else if (voiceModalMode === 'recording') {
-      stopRecording();
     }
   };
 
@@ -482,6 +435,72 @@ const ChatComponent = () => {
     }
   };
 
+  const handleAudioSubmit = async (audioBlob: Blob) => {
+    setVoiceModalMode('thinking');
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'audio.wav');
+      const res = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      console.log('Transcription result:', data);
+      if (data.text) {
+        const userMsg = {
+          id: 'user-' + Date.now(),
+          content: data.text,
+          user: 'me' as 'me',
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, userMsg]);
+        setLoading(true);
+        try {
+          const res = await fetch('/api/chatgpt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: data.text }),
+          });
+          const aiData = await res.json();
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: 'bot-' + Date.now(),
+              content: aiData.reply || 'Desculpe, não consegui responder agora.',
+              user: 'bot',
+              created_at: new Date().toISOString(),
+            },
+          ]);
+          if (aiData.reply) {
+            playTTS(aiData.reply, () => {
+              setVoiceModalMode('ready-to-record');
+            });
+          } else {
+            setVoiceModalMode('ready-to-record');
+          }
+        } catch (err) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: 'bot-error-' + Date.now(),
+              content: 'Erro ao conectar ao ChatGPT.',
+              user: 'bot',
+              created_at: new Date().toISOString(),
+            },
+          ]);
+          setVoiceModalMode('ready-to-record');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setVoiceModalMode('ready-to-record');
+      }
+    } catch (err) {
+      console.error('Transcription error:', err);
+      setVoiceModalMode('ready-to-record');
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -559,10 +578,8 @@ const ChatComponent = () => {
                       {msg.user === 'bot' ? (
                         <TypewriterEffect
                           text={msg.content}
-                          cursorColor="transparent"
-                          textColor="#ffffff"
-                          startDelay={100}
-                          typeSpeed={50}
+                          speed={50}
+                          delay={100}
                         />
                       ) : (
                         <span>{msg.content}</span>
@@ -697,7 +714,7 @@ const ChatComponent = () => {
               onClick={() => {
                 const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
                 if (lastBotMsg) {
-                  setVoiceModalMode('ai-speaking');
+                  setVoiceModalMode('loading');
                   setVoiceModalOpen(true);
                   playTTS(lastBotMsg.content, () => {
                     setVoiceModalMode('ready-to-record');
@@ -711,15 +728,19 @@ const ChatComponent = () => {
         </footer>
       </div>
       <CommentModal
-        open={commentModal.open}
+        isOpen={commentModal.open}
         onClose={() => setCommentModal({ open: false })}
-        message={commentModal.message || { id: '', content: '' }}
-        onSubmit={comment => commentModal.message && handleComment(commentModal.message.id, commentModal.message.content, comment)}
+        onSubmit={(comment) => {
+          if (commentModal.message) {
+            handleComment(commentModal.message.id, commentModal.message.content, comment);
+          }
+        }}
       />
       <VoiceModal
-        open={voiceModalOpen}
-        mode={voiceModalMode}
+        isOpen={voiceModalOpen}
         onClose={handleVoiceModalClose}
+        onSubmit={handleAudioSubmit}
+        mode={voiceModalMode}
         onToggleRecord={handleToggleRecord}
       />
     </div>
