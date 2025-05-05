@@ -69,5 +69,13 @@
     "company": "Entreprise (Optionnel)",
     "companyPlaceholder": "Entrez le nom de votre entreprise (optionnel)",
     "signOut": "Se Déconnecter"
+  },
+  "voice": {
+    "title": "Enregistrement Vocal",
+    "aiSpeaking": "IA en train de parler...",
+    "aiThinking": "IA en réflexion...",
+    "loading": "Chargement de l'audio...",
+    "start": "Démarrer l'enregistrement",
+    "stop": "Arrêter l'enregistrement"
   }
 } 

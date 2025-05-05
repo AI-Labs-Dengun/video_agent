@@ -69,5 +69,13 @@
     "company": "Firma (Optional)",
     "companyPlaceholder": "Geben Sie den Namen Ihrer Firma ein (optional)",
     "signOut": "Abmelden"
+  },
+  "voice": {
+    "title": "Sprachaufnahme",
+    "aiSpeaking": "KI spricht...",
+    "aiThinking": "KI denkt...",
+    "loading": "Audio wird geladen...",
+    "start": "Aufnahme starten",
+    "stop": "Aufnahme stoppen"
   }
 } 

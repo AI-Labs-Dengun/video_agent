@@ -69,5 +69,13 @@
     "company": "Empresa (Opcional)",
     "companyPlaceholder": "Ingresa el nombre de tu empresa (opcional)",
     "signOut": "Cerrar sesión"
+  },
+  "voice": {
+    "title": "Grabación de Voz",
+    "aiSpeaking": "IA Hablando...",
+    "aiThinking": "IA Pensando...",
+    "loading": "Cargando audio...",
+    "start": "Iniciar Grabación",
+    "stop": "Detener Grabación"
   }
 } 
