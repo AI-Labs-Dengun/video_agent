@@ -68,7 +68,11 @@
     "name": "Nombre",
     "company": "Empresa (Opcional)",
     "companyPlaceholder": "Ingresa el nombre de tu empresa (opcional)",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "confirmEmailTitle": "Confirma tu correo electrónico",
+    "confirmEmailMessage": "Por favor, confirma tu dirección de correo electrónico haciendo clic en el enlace que te enviamos. Una vez confirmado, haz clic en el botón de abajo para continuar.",
+    "confirmEmailCta": "Ya he confirmado mi correo",
+    "confirmEmailError": "Por favor, confirma tu correo antes de continuar."
   },
   "voice": {
     "title": "Grabación de Voz",

@@ -77,9 +77,9 @@ html.dark .auth-card {
 }
 
 html.dark .auth-input {
-  background: #181830;
+  background: transparent;
   color: #ededed;
-  border-color: #333366;
+  border-color: #fff;
 }
 
 html.dark .auth-button {
@@ -91,6 +91,7 @@ html.dark .auth-button:hover {
 
 html.dark input, html.dark textarea {
   color: #fff;
+  caret-color: #fff;
 }
 
 .bg-auth-gradient {
@@ -115,6 +116,8 @@ html.dark input, html.dark textarea {
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   outline: none;
+  background: transparent;
+  color: #23234a;
 }
 
 .auth-input:focus {
@@ -151,8 +154,13 @@ input, textarea {
   color: #23234a;
 }
 
-::placeholder {
-  color: #6b7280;
+input::placeholder, textarea::placeholder {
+  color: #374151;
+  opacity: 1;
+}
+
+html.dark input::placeholder, html.dark textarea::placeholder {
+  color: #cbd5e1;
   opacity: 1;
 }
 
@@ -175,4 +183,25 @@ input, textarea {
 }
 .dark .custom-scrollbar {
   scrollbar-color: #541d85 #0000;
+}
+
+input:focus, textarea:focus {
+  border-color: #fff !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+@keyframes voice-wave1 {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes voice-wave2 {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+.animate-voice-wave1 {
+  animation: voice-wave1 1.2s infinite cubic-bezier(0.4,0,0.2,1);
+}
+.animate-voice-wave2 {
+  animation: voice-wave2 1.2s infinite 0.5s cubic-bezier(0.4,0,0.2,1);
 }

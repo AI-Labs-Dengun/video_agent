@@ -68,7 +68,11 @@
     "name": "Name",
     "company": "Firma (Optional)",
     "companyPlaceholder": "Geben Sie den Namen Ihrer Firma ein (optional)",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "confirmEmailTitle": "Bestätigen Sie Ihre E-Mail",
+    "confirmEmailMessage": "Bitte bestätigen Sie Ihre E-Mail-Adresse, indem Sie auf den Link klicken, den wir Ihnen gesendet haben. Nach der Bestätigung klicken Sie auf die Schaltfläche unten, um fortzufahren.",
+    "confirmEmailCta": "Ich habe meine E-Mail bestätigt",
+    "confirmEmailError": "Bitte bestätigen Sie Ihre E-Mail, bevor Sie fortfahren."
   },
   "voice": {
     "title": "Sprachaufnahme",
