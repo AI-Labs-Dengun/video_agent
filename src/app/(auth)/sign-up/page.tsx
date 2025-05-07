@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../../lib/LanguageContext';
 import { useTranslation } from '../../../lib/i18n';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { showAuthNotification } from '../../../lib/auth-notifications';
 
 export default function SignUp() {
   const { dark, toggleTheme } = useTheme();
@@ -35,12 +36,13 @@ export default function SignUp() {
       const { error } = await signUp(email, password, name, company);
       
       if (error) {
-        setError(error.message || t('auth.signUpError'));
+        showAuthNotification.signUpError(language, error.message);
       } else {
+        showAuthNotification.signUpSuccess(language);
         setShowConfirmModal(true);
       }
     } catch (err: any) {
-      setError(err.message || t('common.error'));
+      showAuthNotification.signUpError(language, err.message);
     } finally {
       setLoading(false);
     }

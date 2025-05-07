@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../../lib/LanguageContext';
 import { useTranslation } from '../../../lib/i18n';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { showAuthNotification } from '../../../lib/auth-notifications';
 
 export default function SignIn() {
   const { dark, toggleTheme } = useTheme();
@@ -16,26 +17,24 @@ export default function SignIn() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
     
     try {
       const { error } = await signIn(email, password);
       
       if (error) {
-        setError(error.message || t('auth.signInError'));
+        showAuthNotification.signInError(language, error.message);
       } else {
-        // Redirect to chat page on successful sign in
+        showAuthNotification.signInSuccess(language);
         router.push('/chat');
       }
     } catch (err: any) {
-      setError(err.message || t('common.error'));
+      showAuthNotification.signInError(language, err.message);
     } finally {
       setLoading(false);
     }
@@ -67,12 +66,6 @@ export default function SignIn() {
             </div>
             <p className="text-white/80 text-left text-base leading-tight w-full mb-4">{t('auth.signInWithGoogle')}</p>
           </div>
-          
-          {error && (
-            <div className="mx-6 mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-200 text-sm">
-              {error}
-            </div>
-          )}
           
           <form className="w-full flex flex-col gap-2" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-y-1">

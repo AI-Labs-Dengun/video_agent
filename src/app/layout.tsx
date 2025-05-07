@@ -5,6 +5,7 @@ import { ThemeProvider } from "./providers/ThemeProvider";
 import { SupabaseProvider } from "./providers/SupabaseProvider";
 import { headers } from "next/headers";
 import { LanguageProvider } from '../lib/LanguageContext';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -56,6 +57,7 @@ export default async function RootLayout({
           <ThemeProvider>
             <SupabaseProvider>
               {children}
+              <Toaster />
             </SupabaseProvider>
           </ThemeProvider>
         </LanguageProvider>
