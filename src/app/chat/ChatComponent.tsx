@@ -66,6 +66,8 @@ const ChatComponent = () => {
   const [showTooltipsModal, setShowTooltipsModal] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsModalRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = () => {
     const el = chatContainerRef.current;
@@ -535,6 +537,26 @@ const ChatComponent = () => {
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsOpen && 
+          settingsModalRef.current && 
+          !settingsModalRef.current.contains(event.target as Node) &&
+          settingsButtonRef.current && 
+          !settingsButtonRef.current.contains(event.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+
+    if (settingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [settingsOpen]);
+
   if (!user) return null;
 
   return (
@@ -545,6 +567,7 @@ const ChatComponent = () => {
           <div className="flex items-center gap-4">
             <div className="relative">
               <button
+                ref={settingsButtonRef}
                 onClick={() => setSettingsOpen((v) => !v)}
                 className="p-2 rounded-full bg-white/30 hover:bg-white/50 text-gray-800 dark:text-white focus:outline-none"
                 aria-label={t('settings.title')}
@@ -553,6 +576,7 @@ const ChatComponent = () => {
               </button>
               {settingsOpen && (
                 <div 
+                  ref={settingsModalRef}
                   className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md settings-modal"
                   onClick={(e) => e.stopPropagation()}
                 >
