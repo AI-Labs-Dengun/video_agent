@@ -72,7 +72,9 @@
     "confirmEmailTitle": "Confirma tu correo electrónico",
     "confirmEmailMessage": "Por favor, confirma tu dirección de correo electrónico haciendo clic en el enlace que te enviamos. Una vez confirmado, haz clic en el botón de abajo para continuar.",
     "confirmEmailCta": "Ya he confirmado mi correo",
-    "confirmEmailError": "Por favor, confirma tu correo antes de continuar."
+    "confirmEmailError": "Por favor, confirma tu correo antes de continuar.",
+    "invalidCredentials": "Credenciales de inicio de sesión inválidas",
+    "userAlreadyRegistered": "Usuario ya registrado"
   },
   "voice": {
     "title": "Grabación de Voz",

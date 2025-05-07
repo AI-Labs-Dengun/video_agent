@@ -72,7 +72,9 @@
     "confirmEmailTitle": "Confirmez votre e-mail",
     "confirmEmailMessage": "Veuillez confirmer votre adresse e-mail en cliquant sur le lien que nous avons envoyé dans votre boîte de réception. Une fois confirmé, cliquez sur le bouton ci-dessous pour continuer.",
     "confirmEmailCta": "J'ai confirmé mon e-mail",
-    "confirmEmailError": "Veuillez confirmer votre e-mail avant de continuer."
+    "confirmEmailError": "Veuillez confirmer votre e-mail avant de continuer.",
+    "invalidCredentials": "Identifiants de connexion invalides",
+    "userAlreadyRegistered": "Utilisateur déjà enregistré"
   },
   "voice": {
     "title": "Enregistrement Vocal",
