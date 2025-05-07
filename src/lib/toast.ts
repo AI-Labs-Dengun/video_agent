@@ -41,21 +41,21 @@ export const showToast = {
     return toast.success(message, {
       ...toastStyles.success,
       duration: 4000,
-      position: 'top-center',
+      position: 'bottom-right',
     });
   },
   error: (message: string) => {
     return toast.error(message, {
       ...toastStyles.error,
       duration: 4000,
-      position: 'top-center',
+      position: 'bottom-right',
     });
   },
   loading: (message: string) => {
     return toast.loading(message, {
       ...toastStyles.loading,
       duration: 4000,
-      position: 'top-center',
+      position: 'bottom-right',
     });
   },
   dismiss: (toastId: string) => {
