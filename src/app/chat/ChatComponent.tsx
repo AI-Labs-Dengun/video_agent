@@ -47,6 +47,7 @@ const ChatComponent = () => {
   const [feedback, setFeedback] = useState<Record<string, 'like' | 'dislike' | undefined>>({});
   const [commentModal, setCommentModal] = useState<{ open: boolean, message?: { id: string, content: string } }>({ open: false });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isEmojiButtonActive, setIsEmojiButtonActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [voiceMode, setVoiceMode] = useState<'idle' | 'recording' | 'ai-speaking'>('idle');
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
@@ -63,6 +64,8 @@ const ChatComponent = () => {
   const [tooltips, setTooltips] = useState<string[]>([]);
   const [showTooltips, setShowTooltips] = useState(true);
   const [showTooltipsModal, setShowTooltipsModal] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleScroll = () => {
     const el = chatContainerRef.current;
@@ -300,6 +303,32 @@ const ChatComponent = () => {
     } catch (e) {}
   };
 
+  const handleEmojiButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newState = !showEmojiPicker;
+    setShowEmojiPicker(newState);
+    setIsEmojiButtonActive(newState);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node) &&
+          emojiButtonRef.current && !emojiButtonRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+        setIsEmojiButtonActive(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   const insertEmoji = (emoji: string) => {
     if (!inputRef.current) return;
     const input = inputRef.current;
@@ -506,22 +535,6 @@ const ChatComponent = () => {
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (settingsOpen) {
-        setSettingsOpen(false);
-      }
-      if (showEmojiPicker) {
-        setShowEmojiPicker(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [settingsOpen, showEmojiPicker]);
-
   if (!user) return null;
 
   return (
@@ -540,7 +553,7 @@ const ChatComponent = () => {
               </button>
               {settingsOpen && (
                 <div 
-                  className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md"
+                  className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md settings-modal"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -732,9 +745,10 @@ const ChatComponent = () => {
           >
             <div className="flex items-center w-full">
               <button
+                ref={emojiButtonRef}
                 type="button"
-                className="hidden md:inline-flex text-xl text-white hover:text-gray-200 mr-2"
-                onClick={() => setShowEmojiPicker((v) => !v)}
+                className={`hidden md:inline-flex text-xl text-white hover:text-gray-200 mr-2 ${isEmojiButtonActive ? 'text-blue-400' : ''}`}
+                onClick={handleEmojiButtonClick}
                 tabIndex={-1}
               >
                 <FaRegSmile />
@@ -748,7 +762,6 @@ const ChatComponent = () => {
                 onChange={(e) => setNewMessage(e.target.value)}
                 disabled={loading}
                 style={{ background: 'transparent' }}
-                onBlur={() => setTimeout(() => setShowEmojiPicker(false), 200)}
               />
               <button
                 type="submit"
@@ -776,7 +789,8 @@ const ChatComponent = () => {
             </div>
             {showEmojiPicker && (
               <div 
-                className="absolute bottom-12 left-0 z-50"
+                ref={emojiPickerRef}
+                className="absolute bottom-12 left-0 z-50 emoji-picker-container"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="bg-white dark:bg-[#23234a] rounded-xl shadow-lg">
@@ -785,7 +799,6 @@ const ChatComponent = () => {
                     theme={dark ? 'dark' : 'light'}
                     onEmojiSelect={(e: any) => {
                       insertEmoji(e.native);
-                      setShowEmojiPicker(false);
                     }}
                     previewPosition="none"
                     skinTonePosition="none"
