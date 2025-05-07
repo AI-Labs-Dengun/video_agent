@@ -12,8 +12,12 @@ import VoiceModal from '../../components/VoiceModal';
 import dynamic from 'next/dynamic';
 import data from '@emoji-mart/data';
 
-const EmojiPicker = dynamic(() => import('@emoji-mart/react'), {
-  ssr: false
+const EmojiPicker = dynamic(() => import('@emoji-mart/react').then(mod => mod.default), {
+  ssr: false,
+  loading: () => <div className="w-[350px] h-[400px] bg-white dark:bg-[#23234a] rounded-xl" />,
+  onError: (error) => {
+    console.error('Erro ao carregar EmojiPicker:', error);
+  }
 });
 
 interface Message {
@@ -502,12 +506,28 @@ const ChatComponent = () => {
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsOpen) {
+        setSettingsOpen(false);
+      }
+      if (showEmojiPicker) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [settingsOpen, showEmojiPicker]);
+
   if (!user) return null;
 
   return (
     <div className="bg-auth-gradient min-h-screen flex items-center justify-center">
       <div className="w-full h-screen md:h-[90vh] md:max-w-2xl flex flex-col rounded-none md:rounded-3xl shadow-2xl border border-white/30">
-        <header className="p-6 flex justify-between items-center relative border-b border-white/20">
+        <header className="p-4 md:p-4 flex justify-between items-center relative border-b border-white/20">
           <h1 className="text-2xl font-bold text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -519,7 +539,10 @@ const ChatComponent = () => {
                 <FaCog className="text-xl text-white" />
               </button>
               {settingsOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md">
+                <div 
+                  className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     onClick={toggleTheme}
                     className="w-full flex items-center gap-2 px-4 py-3 text-white hover:bg-white/10 rounded-t-xl"
@@ -570,7 +593,7 @@ const ChatComponent = () => {
                     </div>
                   )}
                   <div
-                    className={`rounded-xl px-5 py-3 pb-6 border-[0.5px] border-white text-white bg-transparent max-w-[90%] md:max-w-[70%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
+                    className={`rounded-xl p-4 border-[0.5px] border-white text-white bg-transparent max-w-[90%] md:max-w-[90%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
                   >
                     <div className="flex items-center gap-2 mb-4">
                       {msg.user === 'bot' ? (
@@ -583,7 +606,7 @@ const ChatComponent = () => {
                         <span>{msg.content}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-5 pb-1 pt-3 relative justify-between">
+                    <div className="flex items-center gap-2 mt-5 pb-1 relative justify-between">
                       <div className="flex items-center gap-2">
                         {msg.user === 'bot' && (
                           <>
@@ -634,32 +657,32 @@ const ChatComponent = () => {
         </main>
         {showTooltips && tooltips.length > 0 && (
           <div className="w-full px-6">
-            <div className="w-full border-t border-white/30 mb-4" />
-            <div className="flex flex-col gap-2 mb-4 items-center w-full md:hidden">
+            <div className="w-full border-t border-white/30 mb-2" />
+            <div className="flex flex-col gap-2 mb-2 items-center w-full md:hidden">
               <button
-                className="w-full flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
+                className="w-full flex-1 px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center text-sm"
                 onClick={() => setShowTooltipsModal(true)}
               >
                 Sugestões
               </button>
             </div>
-            <div className="hidden md:flex flex-col gap-2 mb-4 items-center w-full">
-              <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
+            <div className="hidden md:flex flex-col gap-1.5 mb-2 items-center w-full">
+              <div className="flex flex-col sm:flex-row gap-1.5 w-full justify-center">
                 {tooltips.slice(0, 2).map((tip, idx) => (
                   <button
                     key={idx}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    className="flex-1 px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-sm"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
                   </button>
                 ))}
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
+              <div className="flex flex-col sm:flex-row gap-1.5 w-full justify-center ">
                 {tooltips.slice(2, 4).map((tip, idx) => (
                   <button
                     key={idx+2}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    className="flex-1 px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-sm"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
@@ -668,22 +691,29 @@ const ChatComponent = () => {
               </div>
             </div>
             {showTooltipsModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                <div className="bg-auth-gradient bg-opacity-90 rounded-2xl shadow-2xl p-6 max-w-xs w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
+              <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setShowTooltipsModal(false);
+                  }
+                }}
+              >
+                <div className="bg-auth-gradient bg-opacity-90 rounded-2xl shadow-2xl p-4 max-w-xs w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
                   <button
-                    className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
+                    className="absolute top-3 right-3 text-white/80 hover:text-white text-xl"
                     onClick={() => setShowTooltipsModal(false)}
                     aria-label="Close"
                     type="button"
                   >
                     &times;
                   </button>
-                  <h2 className="text-lg font-bold text-white mb-4 drop-shadow">Sugestões</h2>
-                  <div className="flex flex-col gap-3 w-full">
+                  <h2 className="text-base font-bold text-white mb-3 drop-shadow">Sugestões</h2>
+                  <div className="flex flex-col gap-2 w-full">
                     {tooltips.slice(0, 4).map((tip, idx) => (
                       <button
                         key={idx}
-                        className="w-full px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
+                        className="w-full px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center text-sm"
                         onClick={() => { handleTooltipClick(tip); setShowTooltipsModal(false); }}
                       >
                         {tip}
@@ -695,7 +725,7 @@ const ChatComponent = () => {
             )}
           </div>
         )}
-        <footer className="w-full p-6 border-t border-white/20">
+        <footer className="w-full p-3">
           <form
             onSubmit={handleSendMessage}
             className="flex items-center gap-3 bg-transparent rounded-2xl px-4 py-2 shadow-md border border-white/30 relative"
@@ -745,15 +775,23 @@ const ChatComponent = () => {
               </button>
             </div>
             {showEmojiPicker && (
-              <div className="absolute bottom-12 left-0 z-50">
-                <EmojiPicker
-                  data={data}
-                  theme={dark ? 'dark' : 'light'}
-                  onEmojiSelect={(e: any) => {
-                    insertEmoji(e.native);
-                    setShowEmojiPicker(false);
-                  }}
-                />
+              <div 
+                className="absolute bottom-12 left-0 z-50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="bg-white dark:bg-[#23234a] rounded-xl shadow-lg">
+                  <EmojiPicker
+                    data={data}
+                    theme={dark ? 'dark' : 'light'}
+                    onEmojiSelect={(e: any) => {
+                      insertEmoji(e.native);
+                      setShowEmojiPicker(false);
+                    }}
+                    previewPosition="none"
+                    skinTonePosition="none"
+                    searchPosition="none"
+                  />
+                </div>
               </div>
             )}
           </form>
