@@ -14,10 +14,7 @@ import data from '@emoji-mart/data';
 
 const EmojiPicker = dynamic(() => import('@emoji-mart/react').then(mod => mod.default), {
   ssr: false,
-  loading: () => <div className="w-[350px] h-[400px] bg-white dark:bg-[#23234a] rounded-xl" />,
-  onError: (error) => {
-    console.error('Erro ao carregar EmojiPicker:', error);
-  }
+  loading: () => <div className="w-[350px] h-[400px] bg-white dark:bg-[#23234a] rounded-xl" />
 });
 
 interface Message {
