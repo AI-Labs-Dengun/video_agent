@@ -62,7 +62,6 @@
     "invalidPassword": "A palavra-passe deve ter pelo menos 6 caracteres",
     "passwordsDontMatch": "As palavras-passe não coincidem",
     "signInError": "Erro ao iniciar sessão",
-    "signUpError": "Erro ao registar",
     "signInSuccess": "Sessão iniciada com sucesso",
     "signUpSuccess": "Registo efetuado com sucesso",
     "name": "Nome",
@@ -73,8 +72,9 @@
     "confirmEmailMessage": "Por favor, confirme o seu endereço de e-mail clicando no link que enviámos para a sua caixa de entrada. Depois de confirmar, clique no botão abaixo para continuar.",
     "confirmEmailCta": "Já confirmei o meu e-mail",
     "confirmEmailError": "Por favor, confirme o seu e-mail antes de continuar.",
-    "invalidCredentials": "Credenciais de login inválidas",
-    "userAlreadyRegistered": "Utilizador já registado"
+    "invalidCredentials": "Email já registado",
+    "userAlreadyRegistered": "Utilizador já registado",
+    "emailAlreadyExists": "Este endereço de e-mail já está registado. Por favor, utilize outro endereço de e-mail ou faça login com a sua conta existente."
   },
   "voice": {
     "title": "Gravação de Voz",

@@ -74,7 +74,8 @@
     "confirmEmailCta": "I have confirmed my email",
     "confirmEmailError": "Please confirm your email before continuing.",
     "invalidCredentials": "Invalid login credentials",
-    "userAlreadyRegistered": "User already registered"
+    "userAlreadyRegistered": "User already registered",
+    "emailAlreadyExists": "This email address is already registered. Please use a different email address or sign in with your existing account."
   },
   "voice": {
     "title": "Voice Recording",

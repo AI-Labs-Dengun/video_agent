@@ -74,7 +74,8 @@
     "confirmEmailCta": "Ich habe meine E-Mail bestätigt",
     "confirmEmailError": "Bitte bestätigen Sie Ihre E-Mail, bevor Sie fortfahren.",
     "invalidCredentials": "Ungültige Anmeldedaten",
-    "userAlreadyRegistered": "Benutzer bereits registriert"
+    "userAlreadyRegistered": "Benutzer bereits registriert",
+    "emailAlreadyExists": "Diese E-Mail-Adresse ist bereits registriert. Bitte verwenden Sie eine andere E-Mail-Adresse oder melden Sie sich mit Ihrem bestehenden Konto an."
   },
   "voice": {
     "title": "Sprachaufnahme",

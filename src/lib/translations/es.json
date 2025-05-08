@@ -74,7 +74,8 @@
     "confirmEmailCta": "Ya he confirmado mi correo",
     "confirmEmailError": "Por favor, confirma tu correo antes de continuar.",
     "invalidCredentials": "Credenciales de inicio de sesión inválidas",
-    "userAlreadyRegistered": "Usuario ya registrado"
+    "userAlreadyRegistered": "Usuario ya registrado",
+    "emailAlreadyExists": "Esta dirección de correo electrónico ya está registrada. Por favor, utiliza otra dirección de correo electrónico o inicia sesión con tu cuenta existente."
   },
   "voice": {
     "title": "Grabación de Voz",
