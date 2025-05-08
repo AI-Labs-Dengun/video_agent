@@ -9,6 +9,7 @@ import { useTranslation, Language } from '../../lib/i18n';
 import TypewriterEffect from '../../components/TypewriterEffect';
 import CommentModal from '../../components/CommentModal';
 import VoiceModal from '../../components/VoiceModal';
+import { detectContactInfo } from '../../lib/contactDetector';
 import dynamic from 'next/dynamic';
 import data from '@emoji-mart/data';
 
@@ -206,10 +207,43 @@ const ChatComponent = () => {
     }
   };
 
+  const sendEmailWithConversation = async (email: string | null, phone: string | null) => {
+    try {
+      const conversation = messages.map(msg => 
+        `${msg.user === 'me' ? 'Cliente' : 'Assistente'}: ${msg.content}`
+      ).join('\n\n');
+
+      // Usa o email do usuário logado se não houver um novo email informado
+      const emailToUse = email || user?.email;
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: emailToUse,
+          phone,
+          conversation,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao enviar email');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar email:', error);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     handleFirstInteraction();
     if (!newMessage.trim() || !user) return;
+
+    // Detecta informações de contato na mensagem
+    const { email, phone } = detectContactInfo(newMessage);
+    
     const userMsg: Message = {
       id: 'user-' + Date.now(),
       content: newMessage,
@@ -219,6 +253,12 @@ const ChatComponent = () => {
     setMessages((prev) => [...prev, userMsg]);
     setNewMessage('');
     setLoading(true);
+
+    // Se detectou email ou telefone, envia o email
+    if (email || phone) {
+      await sendEmailWithConversation(email, phone);
+    }
+
     const prompt = `${newMessage}\n\nPlease answer ONLY in ${languageNames[language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
     try {
       const res = await fetch('/api/chatgpt', {
