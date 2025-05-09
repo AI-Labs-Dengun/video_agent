@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog, FaSignOutAlt, FaPause, FaPlay } from 'react-icons/fa';
 import { useSupabase } from '../providers/SupabaseProvider';
 import { useTheme } from '../providers/ThemeProvider';
 import { useLanguage } from '../../lib/LanguageContext';
@@ -61,12 +61,10 @@ const ChatComponent = () => {
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsModalRef = useRef<HTMLDivElement>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isAudioPaused, setIsAudioPaused] = useState(false);
+  const [currentPlayingMessageId, setCurrentPlayingMessageId] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log('Idioma do navegador:', navigator.language);
-    console.log('Idioma atual da aplicação:', language);
-    console.log('Idiomas suportados:', Object.keys(languageNames));
-  }, [language]);
 
   const handleScroll = () => {
     const el = chatContainerRef.current;
@@ -97,7 +95,6 @@ const ChatComponent = () => {
   // Carregar mensagem de boas-vindas quando o componente for montado
   useEffect(() => {
     if (messages.length === 0) {
-      console.log('Iniciando carregamento da mensagem de boas-vindas');
       setGreetingLoading(true);
       (async () => {
         try {
@@ -114,7 +111,6 @@ const ChatComponent = () => {
             body: JSON.stringify({ message: greetingPrompt }),
           });
           const data = await res.json();
-          console.log('Mensagem de boas-vindas carregada com sucesso');
           setMessages([
             {
               id: 'welcome',
@@ -148,13 +144,11 @@ const ChatComponent = () => {
 
   // Carregar sugestões
   useEffect(() => {
-    console.log('Carregando sugestões para o idioma:', language);
     try {
       // Acessa diretamente o array de sugestões no objeto de traduções
       const tooltipsArray = translations[language as Language]?.chat?.tooltips;
       
       if (Array.isArray(tooltipsArray) && tooltipsArray.length > 0) {
-        console.log('Sugestões carregadas com sucesso:', tooltipsArray);
         const shuffled = [...tooltipsArray].sort(() => 0.5 - Math.random());
         setTooltips(shuffled.slice(0, 4));
       } else {
@@ -172,12 +166,6 @@ const ChatComponent = () => {
     // Só verificamos se devemos exibir o modal quando houver tooltips, mensagens,
     // e o usuário ainda não interagiu
     if (tooltips.length > 0 && messages.length > 0 && !hasUserInteracted && !greetingLoading) {
-      console.log('Verificando condições para exibir modal:', {
-        tooltipsLength: tooltips.length,
-        messagesLength: messages.length,
-        hasUserInteracted,
-        greetingLoading
-      });
       
       // Em dispositivos móveis, mostrar o modal automaticamente
       const isMobile = window.innerWidth < 768;
@@ -211,12 +199,27 @@ const ChatComponent = () => {
   }, [tooltips, messages, hasUserInteracted]);
 
   const handleFirstInteraction = () => {
-    console.log('Primeira interação do usuário');
     setHasUserInteracted(true);
     setShowTooltipsModal(false);
   };
 
-  const playTTS = async (text: string, onEnd?: () => void) => {
+  const toggleAudioPlayback = () => {
+    if (!audioRef.current) return;
+    
+    console.log('Toggle Audio - Current state:', { isAudioPlaying, isAudioPaused });
+    
+    if (isAudioPaused) {
+      console.log('Resuming audio playback');
+      audioRef.current.play().catch(err => {
+        console.error('Error resuming audio:', err);
+      });
+    } else {
+      console.log('Pausing audio playback');
+      audioRef.current.pause();
+    }
+  };
+
+  const playTTS = async (text: string, messageId: string, onEnd?: () => void) => {
     if (typeof window === 'undefined') return;
     setVoiceModalMode('loading');
     setVoiceModalOpen(true);
@@ -235,15 +238,34 @@ const ChatComponent = () => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+      
       audio.onended = () => {
         setVoiceModalMode('ready-to-record');
+        setIsAudioPlaying(false);
+        setIsAudioPaused(false);
+        setCurrentPlayingMessageId(null);
         if (onEnd) onEnd();
       };
+      
+      audio.onplay = () => {
+        setIsAudioPlaying(true);
+        setIsAudioPaused(false);
+        setCurrentPlayingMessageId(messageId);
+      };
+      
+      audio.onpause = () => {
+        setIsAudioPlaying(false);
+        setIsAudioPaused(true);
+      };
+      
       setVoiceModalMode('ai-speaking');
-      audio.play();
+      await audio.play();
     } catch (err) {
       console.error('TTS error:', err);
       setVoiceModalMode('ready-to-record');
+      setIsAudioPlaying(false);
+      setIsAudioPaused(false);
+      setCurrentPlayingMessageId(null);
       if (onEnd) onEnd();
     }
   };
@@ -609,7 +631,7 @@ const ChatComponent = () => {
             },
           ]);
           if (aiData.reply) {
-            playTTS(aiData.reply, () => {
+            playTTS(aiData.reply, 'bot-' + Date.now(), () => {
               setVoiceModalMode('ready-to-record');
             });
           } else {
@@ -762,17 +784,27 @@ const ChatComponent = () => {
                             >
                               <FaRegThumbsDown className="text-lg" />
                             </button>
+
+                            {/* Audio button for bot messages */}
                             <button
                               className={`hover:text-blue-300 transition-colors`}
                               onClick={async () => {
-                                setTtsLoadingMsgId(msg.id);
-                                await playTTS(msg.content, () => setTtsLoadingMsgId(null));
-                                setTtsLoadingMsgId(null);
+                                if (currentPlayingMessageId === msg.id) {
+                                  toggleAudioPlayback();
+                                } else {
+                                  setTtsLoadingMsgId(msg.id);
+                                  await playTTS(msg.content, msg.id, () => setTtsLoadingMsgId(null));
+                                  setTtsLoadingMsgId(null);
+                                }
                               }}
                               disabled={ttsLoadingMsgId === msg.id}
                             >
                               {ttsLoadingMsgId === msg.id ? (
                                 <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 inline-block"></span>
+                              ) : currentPlayingMessageId === msg.id && isAudioPaused ? (
+                                <FaPlay className="text-lg text-white" />
+                              ) : currentPlayingMessageId === msg.id && isAudioPlaying ? (
+                                <FaPause className="text-lg text-white" />
                               ) : (
                                 <FaVolumeUp className="text-lg text-white" />
                               )}
@@ -913,17 +945,27 @@ const ChatComponent = () => {
                 type="button"
                 className="text-xl text-white hover:text-gray-200 ml-2"
                 onClick={() => {
-                  const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
-                  if (lastBotMsg) {
-                    setVoiceModalMode('loading');
-                    setVoiceModalOpen(true);
-                    playTTS(lastBotMsg.content, () => {
-                      setVoiceModalMode('ready-to-record');
-                    });
+                  if (isAudioPlaying || isAudioPaused) {
+                    toggleAudioPlayback();
+                  } else {
+                    const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
+                    if (lastBotMsg) {
+                      setVoiceModalMode('loading');
+                      setVoiceModalOpen(true);
+                      playTTS(lastBotMsg.content, lastBotMsg.id, () => {
+                        setVoiceModalMode('ready-to-record');
+                      });
+                    }
                   }
                 }}
               >
-                <FaMicrophone />
+                {isAudioPaused ? (
+                  <FaPlay className="text-xl" />
+                ) : isAudioPlaying ? (
+                  <FaPause className="text-xl" />
+                ) : (
+                  <FaMicrophone className="text-xl" />
+                )}
               </button>
             </div>
             {showEmojiPicker && (
