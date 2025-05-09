@@ -12,6 +12,8 @@ import VoiceModal from '../../components/VoiceModal';
 import { detectContactInfo } from '../../lib/contactDetector';
 import dynamic from 'next/dynamic';
 import data from '@emoji-mart/data';
+import { Toaster } from 'react-hot-toast';
+import showToast from '../../lib/toast';
 
 const EmojiPicker = dynamic(() => import('@emoji-mart/react').then(mod => mod.default), {
   ssr: false,
@@ -64,6 +66,7 @@ const ChatComponent = () => {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isAudioPaused, setIsAudioPaused] = useState(false);
   const [currentPlayingMessageId, setCurrentPlayingMessageId] = useState<string | null>(null);
+  const voiceModalRef = useRef<HTMLDivElement>(null);
 
 
   const handleScroll = () => {
@@ -221,8 +224,9 @@ const ChatComponent = () => {
 
   const playTTS = async (text: string, messageId: string, onEnd?: () => void) => {
     if (typeof window === 'undefined') return;
-    setVoiceModalMode('loading');
-    setVoiceModalOpen(true);
+    
+    const loadingToast = showToast.loading('Carregando áudio...');
+    
     try {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -240,7 +244,6 @@ const ChatComponent = () => {
       audioRef.current = audio;
       
       audio.onended = () => {
-        setVoiceModalMode('ready-to-record');
         setIsAudioPlaying(false);
         setIsAudioPaused(false);
         setCurrentPlayingMessageId(null);
@@ -258,14 +261,14 @@ const ChatComponent = () => {
         setIsAudioPaused(true);
       };
       
-      setVoiceModalMode('ai-speaking');
       await audio.play();
+      showToast.dismiss(loadingToast);
     } catch (err) {
       console.error('TTS error:', err);
-      setVoiceModalMode('ready-to-record');
       setIsAudioPlaying(false);
       setIsAudioPaused(false);
       setCurrentPlayingMessageId(null);
+      showToast.error('Erro ao carregar áudio');
       if (onEnd) onEnd();
     }
   };
@@ -680,10 +683,30 @@ const ChatComponent = () => {
     };
   }, [settingsOpen]);
 
+  // Adicionar useEffect para detectar clique fora do modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (voiceModalOpen && 
+          voiceModalRef.current && 
+          !voiceModalRef.current.contains(event.target as Node)) {
+        handleVoiceModalClose();
+      }
+    };
+
+    if (voiceModalOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [voiceModalOpen]);
+
   if (!user) return null;
 
   return (
     <div className="bg-auth-gradient min-h-screen flex items-center justify-center">
+      <Toaster position="bottom-right" />
       <div className="w-full h-screen md:h-[90vh] md:max-w-2xl flex flex-col rounded-none md:rounded-3xl shadow-2xl border border-white/30">
         <header className="p-4 md:p-4 flex justify-between items-center relative border-b border-white/20">
           <h1 className="text-2xl font-bold text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
@@ -761,7 +784,7 @@ const ChatComponent = () => {
                       {msg.user === 'bot' ? (
                         <TypewriterEffect
                           text={msg.content}
-                          speed={50}
+                          speed={0}
                           delay={100}
                         />
                       ) : (
@@ -945,27 +968,11 @@ const ChatComponent = () => {
                 type="button"
                 className="text-xl text-white hover:text-gray-200 ml-2"
                 onClick={() => {
-                  if (isAudioPlaying || isAudioPaused) {
-                    toggleAudioPlayback();
-                  } else {
-                    const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
-                    if (lastBotMsg) {
-                      setVoiceModalMode('loading');
-                      setVoiceModalOpen(true);
-                      playTTS(lastBotMsg.content, lastBotMsg.id, () => {
-                        setVoiceModalMode('ready-to-record');
-                      });
-                    }
-                  }
+                  setVoiceModalOpen(true);
+                  setVoiceModalMode('ready-to-record');
                 }}
               >
-                {isAudioPaused ? (
-                  <FaPlay className="text-xl" />
-                ) : isAudioPlaying ? (
-                  <FaPause className="text-xl" />
-                ) : (
-                  <FaMicrophone className="text-xl" />
-                )}
+                <FaMicrophone className="text-xl" />
               </button>
             </div>
             {showEmojiPicker && (
@@ -1001,11 +1008,12 @@ const ChatComponent = () => {
         }}
       />
       <VoiceModal
-        isOpen={voiceModalOpen}
+        isOpen={voiceModalOpen && (voiceModalMode === 'ready-to-record' || voiceModalMode === 'recording')}
         onClose={handleVoiceModalClose}
         onSubmit={handleAudioSubmit}
         mode={voiceModalMode}
         onToggleRecord={handleToggleRecord}
+        modalRef={voiceModalRef}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 import { FaMicrophone, FaStop, FaTimes, FaVolumeUp, FaSpinner } from 'react-icons/fa';
 import { useLanguage } from '../lib/LanguageContext';
 import { useTranslation } from '../lib/i18n';
@@ -9,6 +9,7 @@ interface VoiceModalProps {
   onSubmit: (audioBlob: Blob) => void;
   mode: 'ai-speaking' | 'ready-to-record' | 'recording' | 'thinking' | 'loading';
   onToggleRecord: () => void;
+  modalRef: RefObject<HTMLDivElement>;
 }
 
 const VoiceModal: React.FC<VoiceModalProps> = ({
@@ -17,6 +18,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
   onSubmit,
   mode,
   onToggleRecord,
+  modalRef,
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation(language);
@@ -25,7 +27,10 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-auth-gradient bg-opacity-90 border border-white rounded-2xl p-6 w-full max-w-md backdrop-blur-md relative">
+      <div 
+        ref={modalRef}
+        className="bg-auth-gradient bg-opacity-90 border border-white rounded-2xl p-6 w-full max-w-md backdrop-blur-md relative"
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-white">
             {mode === 'ai-speaking' ? t('voice.aiSpeaking') :
