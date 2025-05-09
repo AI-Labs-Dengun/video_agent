@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from "../../providers/ThemeProvider";
 import { useSupabase } from "../../providers/SupabaseProvider";
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,11 @@ export default function SignUp() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    console.log('Idioma do navegador:', navigator.language);
+    console.log('Idioma atual da aplicação:', language);
+  }, [language]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,12 +59,12 @@ export default function SignUp() {
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        setConfirmError(t('auth.confirmEmailError') || 'Please confirm your email before continuing.');
+        setConfirmError(t('auth.confirmEmailError'));
       } else {
         router.push('/chat');
       }
     } catch (err: any) {
-      setConfirmError(t('auth.confirmEmailError') || 'Please confirm your email before continuing.');
+      setConfirmError(t('auth.confirmEmailError'));
     } finally {
       setLoading(false);
     }
@@ -104,7 +109,7 @@ export default function SignUp() {
               <input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder={t('auth.namePlaceholder')}
                 className="auth-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -116,7 +121,7 @@ export default function SignUp() {
               <input
                 id="email"
                 type="email"
-                placeholder="john@example.com"
+                placeholder={t('auth.emailPlaceholder')}
                 className="auth-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -129,7 +134,7 @@ export default function SignUp() {
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                   className="auth-input pr-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -140,7 +145,7 @@ export default function SignUp() {
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   onClick={() => setShowPassword((v) => !v)}
                   tabIndex={-1}
-                  aria-label={showPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -198,7 +203,7 @@ export default function SignUp() {
             <button
               className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
               onClick={() => setShowConfirmModal(false)}
-              aria-label="Close"
+              aria-label={t('common.close')}
               type="button"
             >
               &times;

@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import { useSupabase } from '../providers/SupabaseProvider';
 import { useTheme } from '../providers/ThemeProvider';
-import { useLanguage } from '../../lib/language';
-import { useTranslation, Language } from '../../lib/i18n';
+import { useLanguage } from '../../lib/LanguageContext';
+import { useTranslation, Language, languageNames } from '../../lib/i18n';
 import TypewriterEffect from '../../components/TypewriterEffect';
 import CommentModal from '../../components/CommentModal';
 import VoiceModal from '../../components/VoiceModal';
@@ -24,12 +24,6 @@ interface Message {
   user: 'me' | 'bot';
   created_at: string;
 }
-
-const languageNames: Record<string, string> = {
-  'pt': 'Portuguese',
-  'en': 'English',
-  'es': 'Spanish'
-};
 
 const ChatComponent = () => {
   const { user, signOut } = useSupabase();
@@ -62,10 +56,17 @@ const ChatComponent = () => {
   const [tooltips, setTooltips] = useState<string[]>([]);
   const [showTooltips, setShowTooltips] = useState(true);
   const [showTooltipsModal, setShowTooltipsModal] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsModalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    console.log('Idioma do navegador:', navigator.language);
+    console.log('Idioma atual da aplicação:', language);
+    console.log('Idiomas suportados:', Object.keys(languageNames));
+  }, [language]);
 
   const handleScroll = () => {
     const el = chatContainerRef.current;
@@ -95,6 +96,7 @@ const ChatComponent = () => {
 
   useEffect(() => {
     if (messages.length === 0) {
+      console.log('Iniciando carregamento da mensagem de boas-vindas');
       setGreetingLoading(true);
       (async () => {
         try {
@@ -111,6 +113,7 @@ const ChatComponent = () => {
             body: JSON.stringify({ message: greetingPrompt }),
           });
           const data = await res.json();
+          console.log('Mensagem de boas-vindas carregada com sucesso');
           setMessages([
             {
               id: 'welcome',
@@ -120,6 +123,7 @@ const ChatComponent = () => {
             },
           ]);
         } catch (err) {
+          console.error('Erro ao carregar mensagem de boas-vindas:', err);
           setMessages([
             {
               id: 'welcome',
@@ -135,21 +139,39 @@ const ChatComponent = () => {
     }
   }, [language]);
 
+  // Carregar sugestões
   useEffect(() => {
-    if (messages.length === 0) {
-      let allTooltips: string[] = [];
-      const tt = t('chat.tooltips');
-      if (Array.isArray(tt)) {
-        allTooltips = tt;
-      }
-      const shuffled = [...allTooltips].sort(() => 0.5 - Math.random());
-      setTooltips(shuffled.slice(0, 4));
-      setShowTooltips(true);
+    console.log('Carregando sugestões');
+    let allTooltips: string[] = [];
+    const tt = t('chat.tooltips');
+    if (Array.isArray(tt)) {
+      allTooltips = tt;
     }
-  }, [language, messages.length]);
+    const shuffled = [...allTooltips].sort(() => 0.5 - Math.random());
+    setTooltips(shuffled.slice(0, 4));
+    setShowTooltips(true);
+  }, [language]);
+
+  // Mostrar modal quando as sugestões estiverem carregadas
+  useEffect(() => {
+    console.log('Verificando condições para exibir modal:', {
+      tooltipsLength: tooltips.length,
+      showTooltips,
+      messagesLength: messages.length
+    });
+
+    if (tooltips.length > 0 && showTooltips && messages.length > 0) {
+      console.log('Exibindo modal de sugestões');
+      setShowTooltipsModal(true);
+    }
+  }, [tooltips, showTooltips, messages]);
 
   const handleFirstInteraction = () => {
-    if (showTooltips) setShowTooltips(false);
+    console.log('Primeira interação do usuário');
+    if (showTooltips) {
+      setShowTooltips(false);
+      setShowTooltipsModal(false);
+    }
   };
 
   const playTTS = async (text: string, onEnd?: () => void) => {
@@ -259,7 +281,7 @@ const ChatComponent = () => {
       await sendEmailWithConversation(email, phone);
     }
 
-    const prompt = `${newMessage}\n\nPlease answer ONLY in ${languageNames[language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
+    const prompt = `${newMessage}\n\nPlease answer ONLY in ${languageNames[language as Language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
     try {
       const res = await fetch('/api/chatgpt', {
         method: 'POST',
@@ -476,7 +498,7 @@ const ChatComponent = () => {
     };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
-    const prompt = `${tooltip}\n\nPlease answer ONLY in ${languageNames[language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
+    const prompt = `${tooltip}\n\nPlease answer ONLY in ${languageNames[language as Language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
     try {
       const res = await fetch('/api/chatgpt', {
         method: 'POST',
@@ -669,11 +691,13 @@ const ChatComponent = () => {
                   <div
                     className={`rounded-xl p-4 border-[0.5px] border-white text-white bg-transparent max-w-[90%] md:max-w-[90%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
                   >
+
+                    {/* typing effect for bot messages */}
                     <div className="flex items-center gap-2 mb-4">
                       {msg.user === 'bot' ? (
                         <TypewriterEffect
                           text={msg.content}
-                          speed={50}
+                          speed={0}
                           delay={100}
                         />
                       ) : (
@@ -729,34 +753,39 @@ const ChatComponent = () => {
             </div>
           )}
         </main>
+
+        {/* Sugestões */}
         {showTooltips && tooltips.length > 0 && (
           <div className="w-full px-6">
-            <div className="w-full border-t border-white/30 mb-2" />
-            <div className="flex flex-col gap-2 mb-2 items-center w-full md:hidden">
+            <div className="w-full border-t border-white/30 mb-4" />
+            <div className="flex flex-col gap-2 mb-4 items-center w-full md:hidden">
               <button
-                className="w-full flex-1 px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center text-sm"
-                onClick={() => setShowTooltipsModal(true)}
+                className="w-full flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
+                onClick={() => {
+                  console.log('Botão de sugestões clicado');
+                  setShowTooltipsModal(true);
+                }}
               >
-                Sugestões
+                {t('chat.suggestions')}
               </button>
             </div>
-            <div className="hidden md:flex flex-col gap-1.5 mb-2 items-center w-full">
-              <div className="flex flex-col sm:flex-row gap-1.5 w-full justify-center">
+            <div className="hidden md:flex flex-col gap-2 mb-4 items-center w-full">
+              <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
                 {tooltips.slice(0, 2).map((tip, idx) => (
                   <button
                     key={idx}
-                    className="flex-1 px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-sm"
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
                   </button>
                 ))}
               </div>
-              <div className="flex flex-col sm:flex-row gap-1.5 w-full justify-center ">
+              <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
                 {tooltips.slice(2, 4).map((tip, idx) => (
                   <button
                     key={idx+2}
-                    className="flex-1 px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-sm"
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
@@ -769,26 +798,34 @@ const ChatComponent = () => {
                 className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
                 onClick={(e) => {
                   if (e.target === e.currentTarget) {
+                    console.log('Modal clicado fora');
                     setShowTooltipsModal(false);
                   }
                 }}
               >
-                <div className="bg-auth-gradient bg-opacity-90 rounded-2xl shadow-2xl p-4 max-w-xs w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
+                <div className="bg-auth-gradient bg-opacity-90 rounded-2xl shadow-2xl p-6 max-w-xs w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
                   <button
-                    className="absolute top-3 right-3 text-white/80 hover:text-white text-xl"
-                    onClick={() => setShowTooltipsModal(false)}
+                    className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
+                    onClick={() => {
+                      console.log('Botão de fechar modal clicado');
+                      setShowTooltipsModal(false);
+                    }}
                     aria-label="Close"
                     type="button"
                   >
                     &times;
                   </button>
-                  <h2 className="text-base font-bold text-white mb-3 drop-shadow">Sugestões</h2>
-                  <div className="flex flex-col gap-2 w-full">
-                    {tooltips.slice(0, 4).map((tip, idx) => (
+                  <h2 className="text-lg font-bold text-white mb-4 drop-shadow">{t('chat.suggestions')}</h2>
+                  <div className="flex flex-col gap-3 w-full">
+                    {tooltips.map((tip, idx) => (
                       <button
                         key={idx}
-                        className="w-full px-4 py-1.5 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center text-sm"
-                        onClick={() => { handleTooltipClick(tip); setShowTooltipsModal(false); }}
+                        className="w-full px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
+                        onClick={() => { 
+                          console.log('Sugestão clicada:', tip);
+                          handleTooltipClick(tip); 
+                          setShowTooltipsModal(false); 
+                        }}
                       >
                         {tip}
                       </button>

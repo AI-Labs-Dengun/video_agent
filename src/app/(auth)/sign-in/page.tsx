@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from "../../providers/ThemeProvider";
 import { useSupabase } from "../../providers/SupabaseProvider";
 import { useRouter } from 'next/navigation';
@@ -19,6 +19,11 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    console.log('Idioma do navegador:', navigator.language);
+    console.log('Idioma atual da aplicação:', language);
+  }, [language]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +78,7 @@ export default function SignIn() {
               <input
                 id="email"
                 type="email"
-                placeholder="john@example.com"
+                placeholder={t('auth.emailPlaceholder')}
                 className="auth-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -86,7 +91,7 @@ export default function SignIn() {
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                   className="auth-input pr-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -97,7 +102,7 @@ export default function SignIn() {
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   onClick={() => setShowPassword((v) => !v)}
                   tabIndex={-1}
-                  aria-label={showPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>

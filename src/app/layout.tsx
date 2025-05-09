@@ -24,8 +24,9 @@ export default async function RootLayout({
 }>) {
   const allHeaders = await headers();
   const theme = allHeaders.get("x-theme");
+  
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${theme === "dark" ? "dark" : ""}`}>
+    <html suppressHydrationWarning className={`${inter.variable} ${theme === "dark" ? "dark" : ""}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -33,6 +34,8 @@ export default async function RootLayout({
 (function() {
   try {
     var theme = localStorage.getItem('theme');
+    var lang = localStorage.getItem('language') || navigator.language.split('-')[0];
+    document.documentElement.lang = lang;
     if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     } else {
