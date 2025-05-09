@@ -5,7 +5,7 @@ import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots
 import { useSupabase } from '../providers/SupabaseProvider';
 import { useTheme } from '../providers/ThemeProvider';
 import { useLanguage } from '../../lib/LanguageContext';
-import { useTranslation, Language, languageNames } from '../../lib/i18n';
+import { useTranslation, Language, languageNames, translations } from '../../lib/i18n';
 import TypewriterEffect from '../../components/TypewriterEffect';
 import CommentModal from '../../components/CommentModal';
 import VoiceModal from '../../components/VoiceModal';
@@ -94,6 +94,7 @@ const ChatComponent = () => {
     }
   }, [messages]);
 
+  // Carregar mensagem de boas-vindas quando o componente for montado
   useEffect(() => {
     if (messages.length === 0) {
       console.log('Iniciando carregamento da mensagem de boas-vindas');
@@ -122,6 +123,9 @@ const ChatComponent = () => {
               created_at: new Date().toISOString(),
             },
           ]);
+          
+          // Reinicia o estado de interação do usuário quando uma nova mensagem de boas-vindas é mostrada
+          setHasUserInteracted(false);
         } catch (err) {
           console.error('Erro ao carregar mensagem de boas-vindas:', err);
           setMessages([
@@ -132,6 +136,9 @@ const ChatComponent = () => {
               created_at: new Date().toISOString(),
             },
           ]);
+          
+          // Reinicia o estado de interação do usuário quando uma nova mensagem de boas-vindas é mostrada
+          setHasUserInteracted(false);
         } finally {
           setGreetingLoading(false);
         }
@@ -141,37 +148,72 @@ const ChatComponent = () => {
 
   // Carregar sugestões
   useEffect(() => {
-    console.log('Carregando sugestões');
-    let allTooltips: string[] = [];
-    const tt = t('chat.tooltips');
-    if (Array.isArray(tt)) {
-      allTooltips = tt;
+    console.log('Carregando sugestões para o idioma:', language);
+    try {
+      // Acessa diretamente o array de sugestões no objeto de traduções
+      const tooltipsArray = translations[language as Language]?.chat?.tooltips;
+      
+      if (Array.isArray(tooltipsArray) && tooltipsArray.length > 0) {
+        console.log('Sugestões carregadas com sucesso:', tooltipsArray);
+        const shuffled = [...tooltipsArray].sort(() => 0.5 - Math.random());
+        setTooltips(shuffled.slice(0, 4));
+      } else {
+        console.error('Não foi possível carregar as sugestões para o idioma:', language);
+        setTooltips([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar sugestões:', error);
+      setTooltips([]);
     }
-    const shuffled = [...allTooltips].sort(() => 0.5 - Math.random());
-    setTooltips(shuffled.slice(0, 4));
-    setShowTooltips(true);
   }, [language]);
 
-  // Mostrar modal quando as sugestões estiverem carregadas
+  // Mostrar modal quando as sugestões estiverem carregadas e a mensagem de boas-vindas for exibida
   useEffect(() => {
-    console.log('Verificando condições para exibir modal:', {
-      tooltipsLength: tooltips.length,
-      showTooltips,
-      messagesLength: messages.length
-    });
-
-    if (tooltips.length > 0 && showTooltips && messages.length > 0) {
-      console.log('Exibindo modal de sugestões');
-      setShowTooltipsModal(true);
+    // Só verificamos se devemos exibir o modal quando houver tooltips, mensagens,
+    // e o usuário ainda não interagiu
+    if (tooltips.length > 0 && messages.length > 0 && !hasUserInteracted && !greetingLoading) {
+      console.log('Verificando condições para exibir modal:', {
+        tooltipsLength: tooltips.length,
+        messagesLength: messages.length,
+        hasUserInteracted,
+        greetingLoading
+      });
+      
+      // Em dispositivos móveis, mostrar o modal automaticamente
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        const timer = setTimeout(() => {
+          if (!hasUserInteracted) { // Verificar novamente antes de exibir
+            setShowTooltipsModal(true);
+          }
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+      }
     }
-  }, [tooltips, showTooltips, messages]);
+  }, [tooltips, messages, hasUserInteracted, greetingLoading]);
+
+  // Detectar redimensionamento da tela para ajustar a exibição das sugestões
+  useEffect(() => {
+    const handleResize = () => {
+      if (tooltips.length > 0 && messages.length > 0 && !hasUserInteracted) {
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          setShowTooltipsModal(true);
+        } else {
+          setShowTooltipsModal(false);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [tooltips, messages, hasUserInteracted]);
 
   const handleFirstInteraction = () => {
     console.log('Primeira interação do usuário');
-    if (showTooltips) {
-      setShowTooltips(false);
-      setShowTooltipsModal(false);
-    }
+    setHasUserInteracted(true);
+    setShowTooltipsModal(false);
   };
 
   const playTTS = async (text: string, onEnd?: () => void) => {
@@ -697,7 +739,7 @@ const ChatComponent = () => {
                       {msg.user === 'bot' ? (
                         <TypewriterEffect
                           text={msg.content}
-                          speed={0}
+                          speed={50}
                           delay={100}
                         />
                       ) : (
@@ -755,7 +797,7 @@ const ChatComponent = () => {
         </main>
 
         {/* Sugestões */}
-        {showTooltips && tooltips.length > 0 && (
+        {tooltips.length > 0 && !hasUserInteracted && (
           <div className="w-full px-6">
             <div className="w-full border-t border-white/30 mb-4" />
             <div className="flex flex-col gap-2 mb-4 items-center w-full md:hidden">
@@ -824,7 +866,6 @@ const ChatComponent = () => {
                         onClick={() => { 
                           console.log('Sugestão clicada:', tip);
                           handleTooltipClick(tip); 
-                          setShowTooltipsModal(false); 
                         }}
                       >
                         {tip}
