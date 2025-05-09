@@ -633,13 +633,7 @@ const ChatComponent = () => {
               created_at: new Date().toISOString(),
             },
           ]);
-          if (aiData.reply) {
-            playTTS(aiData.reply, 'bot-' + Date.now(), () => {
-              setVoiceModalMode('ready-to-record');
-            });
-          } else {
-            setVoiceModalMode('ready-to-record');
-          }
+          // setVoiceModalMode('ready-to-record'); //Gravador de audio automatico após resposta do chat 
         } catch (err) {
           setMessages((prev) => [
             ...prev,
@@ -784,7 +778,7 @@ const ChatComponent = () => {
                       {msg.user === 'bot' ? (
                         <TypewriterEffect
                           text={msg.content}
-                          speed={0}
+                          speed={50}
                           delay={100}
                         />
                       ) : (
