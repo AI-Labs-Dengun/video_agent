@@ -184,7 +184,7 @@ const ChatComponent = () => {
       if (isMobile) {
         const timer = setTimeout(() => {
           if (!hasUserInteracted) { // Verificar novamente antes de exibir
-            setShowTooltipsModal(true);
+            setShowTooltipsModal(false);
           }
         }, 1000);
         
@@ -816,7 +816,7 @@ const ChatComponent = () => {
                 {tooltips.slice(0, 2).map((tip, idx) => (
                   <button
                     key={idx}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    className="flex-1 text-sm px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
@@ -827,7 +827,7 @@ const ChatComponent = () => {
                 {tooltips.slice(2, 4).map((tip, idx) => (
                   <button
                     key={idx+2}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    className="flex-1 text-sm px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
