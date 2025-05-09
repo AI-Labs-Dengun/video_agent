@@ -6,7 +6,8 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "close": "Fechar"
   },
   "chat": {
     "send": "Enviar",
@@ -37,7 +38,8 @@
       "Quero desenvolver uma aplicação móvel",
       "Preciso de ajuda com análise de dados",
       "Como é que a IA pode ajudar o meu negócio?"
-    ]
+    ],
+    "suggestions": "Sugestões"
   },
   "settings": {
     "title": "Definições",
@@ -74,7 +76,12 @@
     "confirmEmailError": "Por favor, confirme o seu e-mail antes de continuar.",
     "invalidCredentials": "Email já registado",
     "userAlreadyRegistered": "Utilizador já registado",
-    "emailAlreadyExists": "Este endereço de e-mail já está registado. Por favor, utilize outro endereço de e-mail ou faça login com a sua conta existente."
+    "emailAlreadyExists": "Este endereço de e-mail já está registado. Por favor, utilize outro endereço de e-mail ou faça login com a sua conta existente.",
+    "showPassword": "Mostrar palavra-passe",
+    "hidePassword": "Ocultar palavra-passe",
+    "namePlaceholder": "João Silva",
+    "emailPlaceholder": "joao@exemplo.com",
+    "passwordPlaceholder": "••••••••"
   },
   "voice": {
     "title": "Gravação de Voz",

@@ -6,7 +6,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
-    "edit": "Edit"
+    "edit": "Edit",
+    "close": "Close"
   },
   "chat": {
     "send": "Send",
@@ -37,7 +38,25 @@
       "I want to develop a mobile app",
       "I need help with data analysis",
       "How can AI help my business?"
-    ]
+    ],
+    "suggestions": "Suggestions",
+    "clearChat": "Clear Chat",
+    "exportChat": "Export Chat",
+    "importChat": "Import Chat",
+    "settings": "Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "voice": "Voice",
+    "model": "Model",
+    "temperature": "Temperature",
+    "maxTokens": "Max Tokens",
+    "topP": "Top P",
+    "frequencyPenalty": "Frequency Penalty",
+    "presencePenalty": "Presence Penalty",
+    "stopSequences": "Stop Sequences",
+    "rename": "Rename",
+    "export": "Export",
+    "import": "Import"
   },
   "settings": {
     "title": "Settings",
@@ -66,16 +85,21 @@
     "signInSuccess": "Successfully signed in",
     "signUpSuccess": "Successfully signed up",
     "name": "Name",
-    "company": "Company (Optional)",
-    "companyPlaceholder": "Enter your company name (optional)",
+    "company": "Company",
+    "companyPlaceholder": "Your Company",
     "signOut": "Sign Out",
-    "confirmEmailTitle": "Confirm your email",
-    "confirmEmailMessage": "Please confirm your email address by clicking the link we sent to your inbox. Once confirmed, click the button below to continue.",
-    "confirmEmailCta": "I have confirmed my email",
+    "confirmEmailTitle": "Confirm Your Email",
+    "confirmEmailMessage": "Please check your email for a confirmation link. Click the link to verify your account.",
+    "confirmEmailCta": "Continue",
     "confirmEmailError": "Please confirm your email before continuing.",
     "invalidCredentials": "Invalid login credentials",
     "userAlreadyRegistered": "User already registered",
-    "emailAlreadyExists": "This email address is already registered. Please use a different email address or sign in with your existing account."
+    "emailAlreadyExists": "This email address is already registered. Please use a different email address or sign in with your existing account.",
+    "namePlaceholder": "John Doe",
+    "emailPlaceholder": "john@example.com",
+    "passwordPlaceholder": "••••••••",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "voice": {
     "title": "Voice Recording",
@@ -83,6 +107,11 @@
     "aiThinking": "AI Thinking...",
     "loading": "Loading audio...",
     "start": "Start Recording",
-    "stop": "Stop Recording"
+    "stop": "Stop Recording",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "recording": "Recording...",
+    "processing": "Processing...",
+    "error": "Error recording audio"
   }
 } 
