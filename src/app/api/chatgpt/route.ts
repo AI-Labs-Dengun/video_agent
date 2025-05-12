@@ -29,7 +29,11 @@ IMPORTANTE:
 - Seja criativo e original em suas respostas
 - Use o tom e estilo definidos nas instruções
 - Incorpore informações relevantes da base de conhecimento
-- Nunca copie exemplos diretamente das instruções`;
+- Nunca copie exemplos diretamente das instruções
+- Evite começar suas respostas com cumprimentos (olá, oi, etc) ou afirmações (claro, sim, etc)
+- Responda de forma direta e natural, como em uma conversa real
+- Mantenha suas respostas concisas e objetivas
+- Use linguagem coloquial e amigável, mas mantenha o profissionalismo`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",

@@ -1,19 +1,23 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog, FaSignOutAlt, FaPause, FaPlay } from 'react-icons/fa';
 import { useSupabase } from '../providers/SupabaseProvider';
 import { useTheme } from '../providers/ThemeProvider';
-import { useLanguage } from '../../lib/language';
-import { useTranslation, Language } from '../../lib/i18n';
+import { useLanguage } from '../../lib/LanguageContext';
+import { useTranslation, Language, languageNames, translations } from '../../lib/i18n';
 import TypewriterEffect from '../../components/TypewriterEffect';
 import CommentModal from '../../components/CommentModal';
 import VoiceModal from '../../components/VoiceModal';
+import { detectContactInfo } from '../../lib/contactDetector';
 import dynamic from 'next/dynamic';
 import data from '@emoji-mart/data';
+import { Toaster } from 'react-hot-toast';
+import showToast from '../../lib/toast';
 
-const EmojiPicker = dynamic(() => import('@emoji-mart/react'), {
-  ssr: false
+const EmojiPicker = dynamic(() => import('@emoji-mart/react').then(mod => mod.default), {
+  ssr: false,
+  loading: () => <div className="w-[350px] h-[400px] bg-white dark:bg-[#23234a] rounded-xl" />
 });
 
 interface Message {
@@ -22,12 +26,6 @@ interface Message {
   user: 'me' | 'bot';
   created_at: string;
 }
-
-const languageNames: Record<string, string> = {
-  'pt': 'Portuguese',
-  'en': 'English',
-  'es': 'Spanish'
-};
 
 const ChatComponent = () => {
   const { user, signOut } = useSupabase();
@@ -43,6 +41,7 @@ const ChatComponent = () => {
   const [feedback, setFeedback] = useState<Record<string, 'like' | 'dislike' | undefined>>({});
   const [commentModal, setCommentModal] = useState<{ open: boolean, message?: { id: string, content: string } }>({ open: false });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isEmojiButtonActive, setIsEmojiButtonActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [voiceMode, setVoiceMode] = useState<'idle' | 'recording' | 'ai-speaking'>('idle');
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
@@ -59,6 +58,16 @@ const ChatComponent = () => {
   const [tooltips, setTooltips] = useState<string[]>([]);
   const [showTooltips, setShowTooltips] = useState(true);
   const [showTooltipsModal, setShowTooltipsModal] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsModalRef = useRef<HTMLDivElement>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isAudioPaused, setIsAudioPaused] = useState(false);
+  const [currentPlayingMessageId, setCurrentPlayingMessageId] = useState<string | null>(null);
+  const voiceModalRef = useRef<HTMLDivElement>(null);
+
 
   const handleScroll = () => {
     const el = chatContainerRef.current;
@@ -86,6 +95,7 @@ const ChatComponent = () => {
     }
   }, [messages]);
 
+  // Carregar mensagem de boas-vindas quando o componente for montado
   useEffect(() => {
     if (messages.length === 0) {
       setGreetingLoading(true);
@@ -112,7 +122,11 @@ const ChatComponent = () => {
               created_at: new Date().toISOString(),
             },
           ]);
+          
+          // Reinicia o estado de interação do usuário quando uma nova mensagem de boas-vindas é mostrada
+          setHasUserInteracted(false);
         } catch (err) {
+          console.error('Erro ao carregar mensagem de boas-vindas:', err);
           setMessages([
             {
               id: 'welcome',
@@ -121,6 +135,9 @@ const ChatComponent = () => {
               created_at: new Date().toISOString(),
             },
           ]);
+          
+          // Reinicia o estado de interação do usuário quando uma nova mensagem de boas-vindas é mostrada
+          setHasUserInteracted(false);
         } finally {
           setGreetingLoading(false);
         }
@@ -128,27 +145,88 @@ const ChatComponent = () => {
     }
   }, [language]);
 
+  // Carregar sugestões
   useEffect(() => {
-    if (messages.length === 0) {
-      let allTooltips: string[] = [];
-      const tt = t('chat.tooltips');
-      if (Array.isArray(tt)) {
-        allTooltips = tt;
+    try {
+      // Acessa diretamente o array de sugestões no objeto de traduções
+      const tooltipsArray = translations[language as Language]?.chat?.tooltips;
+      
+      if (Array.isArray(tooltipsArray) && tooltipsArray.length > 0) {
+        const shuffled = [...tooltipsArray].sort(() => 0.5 - Math.random());
+        setTooltips(shuffled.slice(0, 4));
+      } else {
+        console.error('Não foi possível carregar as sugestões para o idioma:', language);
+        setTooltips([]);
       }
-      const shuffled = [...allTooltips].sort(() => 0.5 - Math.random());
-      setTooltips(shuffled.slice(0, 4));
-      setShowTooltips(true);
+    } catch (error) {
+      console.error('Erro ao carregar sugestões:', error);
+      setTooltips([]);
     }
-  }, [language, messages.length]);
+  }, [language]);
+
+  // Mostrar modal quando as sugestões estiverem carregadas e a mensagem de boas-vindas for exibida
+  useEffect(() => {
+    // Só verificamos se devemos exibir o modal quando houver tooltips, mensagens,
+    // e o usuário ainda não interagiu
+    if (tooltips.length > 0 && messages.length > 0 && !hasUserInteracted && !greetingLoading) {
+      
+      // Em dispositivos móveis, mostrar o modal automaticamente
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        const timer = setTimeout(() => {
+          if (!hasUserInteracted) { // Verificar novamente antes de exibir
+            setShowTooltipsModal(false);
+          }
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [tooltips, messages, hasUserInteracted, greetingLoading]);
+
+  // Detectar redimensionamento da tela para ajustar a exibição das sugestões
+  useEffect(() => {
+    const handleResize = () => {
+      if (tooltips.length > 0 && messages.length > 0 && !hasUserInteracted) {
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          setShowTooltipsModal(true);
+        } else {
+          setShowTooltipsModal(false);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [tooltips, messages, hasUserInteracted]);
 
   const handleFirstInteraction = () => {
-    if (showTooltips) setShowTooltips(false);
+    setHasUserInteracted(true);
+    setShowTooltipsModal(false);
   };
 
-  const playTTS = async (text: string, onEnd?: () => void) => {
+  const toggleAudioPlayback = () => {
+    if (!audioRef.current) return;
+    
+    console.log('Toggle Audio - Current state:', { isAudioPlaying, isAudioPaused });
+    
+    if (isAudioPaused) {
+      console.log('Resuming audio playback');
+      audioRef.current.play().catch(err => {
+        console.error('Error resuming audio:', err);
+      });
+    } else {
+      console.log('Pausing audio playback');
+      audioRef.current.pause();
+    }
+  };
+
+  const playTTS = async (text: string, messageId: string, onEnd?: () => void) => {
     if (typeof window === 'undefined') return;
-    setVoiceModalMode('loading');
-    setVoiceModalOpen(true);
+    
+    const loadingToast = showToast.loading('Carregando áudio...');
+    
     try {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -164,15 +242,33 @@ const ChatComponent = () => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+      
       audio.onended = () => {
-        setVoiceModalMode('ready-to-record');
+        setIsAudioPlaying(false);
+        setIsAudioPaused(false);
+        setCurrentPlayingMessageId(null);
         if (onEnd) onEnd();
       };
-      setVoiceModalMode('ai-speaking');
-      audio.play();
+      
+      audio.onplay = () => {
+        setIsAudioPlaying(true);
+        setIsAudioPaused(false);
+        setCurrentPlayingMessageId(messageId);
+      };
+      
+      audio.onpause = () => {
+        setIsAudioPlaying(false);
+        setIsAudioPaused(true);
+      };
+      
+      await audio.play();
+      showToast.dismiss(loadingToast);
     } catch (err) {
       console.error('TTS error:', err);
-      setVoiceModalMode('ready-to-record');
+      setIsAudioPlaying(false);
+      setIsAudioPaused(false);
+      setCurrentPlayingMessageId(null);
+      showToast.error('Erro ao carregar áudio');
       if (onEnd) onEnd();
     }
   };
@@ -200,10 +296,43 @@ const ChatComponent = () => {
     }
   };
 
+  const sendEmailWithConversation = async (email: string | null, phone: string | null) => {
+    try {
+      const conversation = messages.map(msg => 
+        `${msg.user === 'me' ? 'Cliente' : 'Assistente'}: ${msg.content}`
+      ).join('\n\n');
+
+      // Usa o email do usuário logado se não houver um novo email informado
+      const emailToUse = email || user?.email;
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: emailToUse,
+          phone,
+          conversation,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao enviar email');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar email:', error);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     handleFirstInteraction();
     if (!newMessage.trim() || !user) return;
+
+    // Detecta informações de contato na mensagem
+    const { email, phone } = detectContactInfo(newMessage);
+    
     const userMsg: Message = {
       id: 'user-' + Date.now(),
       content: newMessage,
@@ -213,7 +342,13 @@ const ChatComponent = () => {
     setMessages((prev) => [...prev, userMsg]);
     setNewMessage('');
     setLoading(true);
-    const prompt = `${newMessage}\n\nPlease answer ONLY in ${languageNames[language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
+
+    // Se detectou email ou telefone, envia o email
+    if (email || phone) {
+      await sendEmailWithConversation(email, phone);
+    }
+
+    const prompt = `${newMessage}\n\nPlease answer ONLY in ${languageNames[language as Language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
     try {
       const res = await fetch('/api/chatgpt', {
         method: 'POST',
@@ -295,6 +430,32 @@ const ChatComponent = () => {
       });
     } catch (e) {}
   };
+
+  const handleEmojiButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newState = !showEmojiPicker;
+    setShowEmojiPicker(newState);
+    setIsEmojiButtonActive(newState);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node) &&
+          emojiButtonRef.current && !emojiButtonRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+        setIsEmojiButtonActive(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   const insertEmoji = (emoji: string) => {
     if (!inputRef.current) return;
@@ -404,7 +565,7 @@ const ChatComponent = () => {
     };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
-    const prompt = `${tooltip}\n\nPlease answer ONLY in ${languageNames[language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
+    const prompt = `${tooltip}\n\nPlease answer ONLY in ${languageNames[language as Language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
     try {
       const res = await fetch('/api/chatgpt', {
         method: 'POST',
@@ -472,13 +633,7 @@ const ChatComponent = () => {
               created_at: new Date().toISOString(),
             },
           ]);
-          if (aiData.reply) {
-            playTTS(aiData.reply, () => {
-              setVoiceModalMode('ready-to-record');
-            });
-          } else {
-            setVoiceModalMode('ready-to-record');
-          }
+          // setVoiceModalMode('ready-to-record'); //Gravador de audio automatico após resposta do chat 
         } catch (err) {
           setMessages((prev) => [
             ...prev,
@@ -502,16 +657,57 @@ const ChatComponent = () => {
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsOpen && 
+          settingsModalRef.current && 
+          !settingsModalRef.current.contains(event.target as Node) &&
+          settingsButtonRef.current && 
+          !settingsButtonRef.current.contains(event.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+
+    if (settingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [settingsOpen]);
+
+  // Adicionar useEffect para detectar clique fora do modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (voiceModalOpen && 
+          voiceModalRef.current && 
+          !voiceModalRef.current.contains(event.target as Node)) {
+        handleVoiceModalClose();
+      }
+    };
+
+    if (voiceModalOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [voiceModalOpen]);
+
   if (!user) return null;
 
   return (
     <div className="bg-auth-gradient min-h-screen flex items-center justify-center">
+      <Toaster position="bottom-right" />
       <div className="w-full h-screen md:h-[90vh] md:max-w-2xl flex flex-col rounded-none md:rounded-3xl shadow-2xl border border-white/30">
-        <header className="p-6 flex justify-between items-center relative border-b border-white/20">
+        <header className="p-4 md:p-4 flex justify-between items-center relative border-b border-white/20">
           <h1 className="text-2xl font-bold text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
           <div className="flex items-center gap-4">
             <div className="relative">
               <button
+                ref={settingsButtonRef}
                 onClick={() => setSettingsOpen((v) => !v)}
                 className="p-2 rounded-full bg-white/30 hover:bg-white/50 text-gray-800 dark:text-white focus:outline-none"
                 aria-label={t('settings.title')}
@@ -519,7 +715,11 @@ const ChatComponent = () => {
                 <FaCog className="text-xl text-white" />
               </button>
               {settingsOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md">
+                <div 
+                  ref={settingsModalRef}
+                  className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md settings-modal"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     onClick={toggleTheme}
                     className="w-full flex items-center gap-2 px-4 py-3 text-white hover:bg-white/10 rounded-t-xl"
@@ -570,8 +770,10 @@ const ChatComponent = () => {
                     </div>
                   )}
                   <div
-                    className={`rounded-xl px-5 py-3 pb-6 border-[0.5px] border-white text-white bg-transparent max-w-[90%] md:max-w-[70%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
+                    className={`rounded-xl p-4 border-[0.5px] border-white text-white bg-transparent max-w-[90%] md:max-w-[90%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
                   >
+
+                    {/* typing effect for bot messages */}
                     <div className="flex items-center gap-2 mb-4">
                       {msg.user === 'bot' ? (
                         <TypewriterEffect
@@ -583,7 +785,7 @@ const ChatComponent = () => {
                         <span>{msg.content}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-5 pb-1 pt-3 relative justify-between">
+                    <div className="flex items-center gap-2 mt-5 pb-1 relative justify-between">
                       <div className="flex items-center gap-2">
                         {msg.user === 'bot' && (
                           <>
@@ -599,17 +801,27 @@ const ChatComponent = () => {
                             >
                               <FaRegThumbsDown className="text-lg" />
                             </button>
+
+                            {/* Audio button for bot messages */}
                             <button
                               className={`hover:text-blue-300 transition-colors`}
                               onClick={async () => {
-                                setTtsLoadingMsgId(msg.id);
-                                await playTTS(msg.content, () => setTtsLoadingMsgId(null));
-                                setTtsLoadingMsgId(null);
+                                if (currentPlayingMessageId === msg.id) {
+                                  toggleAudioPlayback();
+                                } else {
+                                  setTtsLoadingMsgId(msg.id);
+                                  await playTTS(msg.content, msg.id, () => setTtsLoadingMsgId(null));
+                                  setTtsLoadingMsgId(null);
+                                }
                               }}
                               disabled={ttsLoadingMsgId === msg.id}
                             >
                               {ttsLoadingMsgId === msg.id ? (
                                 <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 inline-block"></span>
+                              ) : currentPlayingMessageId === msg.id && isAudioPaused ? (
+                                <FaPlay className="text-lg text-white" />
+                              ) : currentPlayingMessageId === msg.id && isAudioPlaying ? (
+                                <FaPause className="text-lg text-white" />
                               ) : (
                                 <FaVolumeUp className="text-lg text-white" />
                               )}
@@ -632,15 +844,20 @@ const ChatComponent = () => {
             </div>
           )}
         </main>
-        {showTooltips && tooltips.length > 0 && (
+
+        {/* Sugestões */}
+        {tooltips.length > 0 && !hasUserInteracted && (
           <div className="w-full px-6">
             <div className="w-full border-t border-white/30 mb-4" />
             <div className="flex flex-col gap-2 mb-4 items-center w-full md:hidden">
               <button
                 className="w-full flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
-                onClick={() => setShowTooltipsModal(true)}
+                onClick={() => {
+                  console.log('Botão de sugestões clicado');
+                  setShowTooltipsModal(true);
+                }}
               >
-                Sugestões
+                {t('chat.suggestions')}
               </button>
             </div>
             <div className="hidden md:flex flex-col gap-2 mb-4 items-center w-full">
@@ -648,7 +865,7 @@ const ChatComponent = () => {
                 {tooltips.slice(0, 2).map((tip, idx) => (
                   <button
                     key={idx}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    className="flex-1 text-sm px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
@@ -659,7 +876,7 @@ const ChatComponent = () => {
                 {tooltips.slice(2, 4).map((tip, idx) => (
                   <button
                     key={idx+2}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
+                    className="flex-1 text-sm px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors"
                     onClick={() => handleTooltipClick(tip)}
                   >
                     {tip}
@@ -668,23 +885,37 @@ const ChatComponent = () => {
               </div>
             </div>
             {showTooltipsModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    console.log('Modal clicado fora');
+                    setShowTooltipsModal(false);
+                  }
+                }}
+              >
                 <div className="bg-auth-gradient bg-opacity-90 rounded-2xl shadow-2xl p-6 max-w-xs w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
                   <button
                     className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
-                    onClick={() => setShowTooltipsModal(false)}
+                    onClick={() => {
+                      console.log('Botão de fechar modal clicado');
+                      setShowTooltipsModal(false);
+                    }}
                     aria-label="Close"
                     type="button"
                   >
                     &times;
                   </button>
-                  <h2 className="text-lg font-bold text-white mb-4 drop-shadow">Sugestões</h2>
+                  <h2 className="text-lg font-bold text-white mb-4 drop-shadow">{t('chat.suggestions')}</h2>
                   <div className="flex flex-col gap-3 w-full">
-                    {tooltips.slice(0, 4).map((tip, idx) => (
+                    {tooltips.map((tip, idx) => (
                       <button
                         key={idx}
                         className="w-full px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
-                        onClick={() => { handleTooltipClick(tip); setShowTooltipsModal(false); }}
+                        onClick={() => { 
+                          console.log('Sugestão clicada:', tip);
+                          handleTooltipClick(tip); 
+                        }}
                       >
                         {tip}
                       </button>
@@ -695,16 +926,17 @@ const ChatComponent = () => {
             )}
           </div>
         )}
-        <footer className="w-full p-6 border-t border-white/20">
+        <footer className="w-full p-3">
           <form
             onSubmit={handleSendMessage}
             className="flex items-center gap-3 bg-transparent rounded-2xl px-4 py-2 shadow-md border border-white/30 relative"
           >
             <div className="flex items-center w-full">
               <button
+                ref={emojiButtonRef}
                 type="button"
-                className="hidden md:inline-flex text-xl text-white hover:text-gray-200 mr-2"
-                onClick={() => setShowEmojiPicker((v) => !v)}
+                className={`hidden md:inline-flex text-xl text-white hover:text-gray-200 mr-2 ${isEmojiButtonActive ? 'text-blue-400' : ''}`}
+                onClick={handleEmojiButtonClick}
                 tabIndex={-1}
               >
                 <FaRegSmile />
@@ -718,7 +950,6 @@ const ChatComponent = () => {
                 onChange={(e) => setNewMessage(e.target.value)}
                 disabled={loading}
                 style={{ background: 'transparent' }}
-                onBlur={() => setTimeout(() => setShowEmojiPicker(false), 200)}
               />
               <button
                 type="submit"
@@ -731,29 +962,31 @@ const ChatComponent = () => {
                 type="button"
                 className="text-xl text-white hover:text-gray-200 ml-2"
                 onClick={() => {
-                  const lastBotMsg = [...messages].reverse().find(m => m.user === 'bot');
-                  if (lastBotMsg) {
-                    setVoiceModalMode('loading');
-                    setVoiceModalOpen(true);
-                    playTTS(lastBotMsg.content, () => {
-                      setVoiceModalMode('ready-to-record');
-                    });
-                  }
+                  setVoiceModalOpen(true);
+                  setVoiceModalMode('ready-to-record');
                 }}
               >
-                <FaMicrophone />
+                <FaMicrophone className="text-xl" />
               </button>
             </div>
             {showEmojiPicker && (
-              <div className="absolute bottom-12 left-0 z-50">
-                <EmojiPicker
-                  data={data}
-                  theme={dark ? 'dark' : 'light'}
-                  onEmojiSelect={(e: any) => {
-                    insertEmoji(e.native);
-                    setShowEmojiPicker(false);
-                  }}
-                />
+              <div 
+                ref={emojiPickerRef}
+                className="absolute bottom-12 left-0 z-50 emoji-picker-container"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="bg-white dark:bg-[#23234a] rounded-xl shadow-lg">
+                  <EmojiPicker
+                    data={data}
+                    theme={dark ? 'dark' : 'light'}
+                    onEmojiSelect={(e: any) => {
+                      insertEmoji(e.native);
+                    }}
+                    previewPosition="none"
+                    skinTonePosition="none"
+                    searchPosition="none"
+                  />
+                </div>
               </div>
             )}
           </form>
@@ -769,11 +1002,12 @@ const ChatComponent = () => {
         }}
       />
       <VoiceModal
-        isOpen={voiceModalOpen}
+        isOpen={voiceModalOpen && (voiceModalMode === 'ready-to-record' || voiceModalMode === 'recording')}
         onClose={handleVoiceModalClose}
         onSubmit={handleAudioSubmit}
         mode={voiceModalMode}
         onToggleRecord={handleToggleRecord}
+        modalRef={voiceModalRef}
       />
     </div>
   );

@@ -6,7 +6,8 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "close": "Fechar"
   },
   "chat": {
     "send": "Enviar",
@@ -37,7 +38,8 @@
       "Quero desenvolver uma aplicação móvel",
       "Preciso de ajuda com análise de dados",
       "Como é que a IA pode ajudar o meu negócio?"
-    ]
+    ],
+    "suggestions": "Sugestões"
   },
   "settings": {
     "title": "Definições",
@@ -62,7 +64,6 @@
     "invalidPassword": "A palavra-passe deve ter pelo menos 6 caracteres",
     "passwordsDontMatch": "As palavras-passe não coincidem",
     "signInError": "Erro ao iniciar sessão",
-    "signUpError": "Erro ao registar",
     "signInSuccess": "Sessão iniciada com sucesso",
     "signUpSuccess": "Registo efetuado com sucesso",
     "name": "Nome",
@@ -72,7 +73,15 @@
     "confirmEmailTitle": "Confirme o seu e-mail",
     "confirmEmailMessage": "Por favor, confirme o seu endereço de e-mail clicando no link que enviámos para a sua caixa de entrada. Depois de confirmar, clique no botão abaixo para continuar.",
     "confirmEmailCta": "Já confirmei o meu e-mail",
-    "confirmEmailError": "Por favor, confirme o seu e-mail antes de continuar."
+    "confirmEmailError": "Por favor, confirme o seu e-mail antes de continuar.",
+    "invalidCredentials": "Email já registado",
+    "userAlreadyRegistered": "Utilizador já registado",
+    "emailAlreadyExists": "Este endereço de e-mail já está registado. Por favor, utilize outro endereço de e-mail ou faça login com a sua conta existente.",
+    "showPassword": "Mostrar palavra-passe",
+    "hidePassword": "Ocultar palavra-passe",
+    "namePlaceholder": "João Silva",
+    "emailPlaceholder": "joao@exemplo.com",
+    "passwordPlaceholder": "••••••••"
   },
   "voice": {
     "title": "Gravação de Voz",

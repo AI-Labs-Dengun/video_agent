@@ -1,19 +1,34 @@
 {
   "common": {
     "loading": "Cargando...",
-    "error": "Ha ocurrido un error",
+    "error": "Ocurrió un error",
     "retry": "Reintentar",
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "close": "Cerrar"
   },
   "chat": {
     "send": "Enviar",
     "typeMessage": "Escribe un mensaje...",
     "newChat": "Nuevo Chat",
+    "clearChat": "Limpiar Chat",
     "deleteChat": "Eliminar Chat",
     "renameChat": "Renombrar Chat",
+    "exportChat": "Exportar Chat",
+    "importChat": "Importar Chat",
+    "settings": "Configuración",
+    "theme": "Tema",
+    "language": "Idioma",
+    "voice": "Voz",
+    "model": "Modelo",
+    "temperature": "Temperatura",
+    "maxTokens": "Máximo de Tokens",
+    "topP": "Top P",
+    "frequencyPenalty": "Penalización de Frecuencia",
+    "presencePenalty": "Penalización de Presencia",
+    "stopSequences": "Secuencias de Parada",
     "addComment": "Añadir Comentario",
     "writeComment": "Escribe tu comentario...",
     "submit": "Enviar",
@@ -37,7 +52,11 @@
       "Quiero desarrollar una aplicación móvil",
       "Necesito ayuda con el análisis de datos",
       "¿Cómo puede la IA ayudar a mi negocio?"
-    ]
+    ],
+    "suggestions": "Sugerencias",
+    "rename": "Renombrar",
+    "export": "Exportar",
+    "import": "Importar"
   },
   "settings": {
     "title": "Configuración",
@@ -49,12 +68,14 @@
   "auth": {
     "signIn": "Iniciar Sesión",
     "signUp": "Registrarse",
+    "signOut": "Cerrar Sesión",
     "email": "Correo Electrónico",
     "password": "Contraseña",
-    "confirmPassword": "Confirmar Contraseña",
+    "name": "Nombre",
+    "company": "Empresa",
     "forgotPassword": "¿Olvidaste tu contraseña?",
-    "noAccount": "¿No tienes una cuenta?",
     "haveAccount": "¿Ya tienes una cuenta?",
+    "noAccount": "¿No tienes una cuenta?",
     "signInWithGoogle": "Iniciar sesión con Google",
     "signUpWithGoogle": "Registrarse con Google",
     "or": "o",
@@ -65,14 +86,19 @@
     "signUpError": "Error al registrarse",
     "signInSuccess": "Sesión iniciada exitosamente",
     "signUpSuccess": "Registro exitoso",
-    "name": "Nombre",
-    "company": "Empresa (Opcional)",
-    "companyPlaceholder": "Ingresa el nombre de tu empresa (opcional)",
-    "signOut": "Cerrar sesión",
-    "confirmEmailTitle": "Confirma tu correo electrónico",
-    "confirmEmailMessage": "Por favor, confirma tu dirección de correo electrónico haciendo clic en el enlace que te enviamos. Una vez confirmado, haz clic en el botón de abajo para continuar.",
-    "confirmEmailCta": "Ya he confirmado mi correo",
-    "confirmEmailError": "Por favor, confirma tu correo antes de continuar."
+    "namePlaceholder": "Juan Pérez",
+    "emailPlaceholder": "juan@ejemplo.com",
+    "passwordPlaceholder": "••••••••",
+    "companyPlaceholder": "Tu Empresa",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "confirmEmailTitle": "Confirma tu Correo",
+    "confirmEmailMessage": "Por favor, revisa tu correo electrónico para encontrar el enlace de confirmación. Haz clic en el enlace para verificar tu cuenta.",
+    "confirmEmailCta": "Continuar",
+    "confirmEmailError": "Por favor, confirma tu correo electrónico antes de continuar.",
+    "invalidCredentials": "Credenciales de inicio de sesión inválidas",
+    "userAlreadyRegistered": "Usuario ya registrado",
+    "emailAlreadyExists": "Esta dirección de correo electrónico ya está registrada. Por favor, utiliza otra dirección de correo electrónico o inicia sesión con tu cuenta existente."
   },
   "voice": {
     "title": "Grabación de Voz",
@@ -80,6 +106,11 @@
     "aiThinking": "IA Pensando...",
     "loading": "Cargando audio...",
     "start": "Iniciar Grabación",
-    "stop": "Detener Grabación"
+    "stop": "Detener Grabación",
+    "startRecording": "Iniciar Grabación",
+    "stopRecording": "Detener Grabación",
+    "recording": "Grabando...",
+    "processing": "Procesando...",
+    "error": "Error al grabar audio"
   }
 } 

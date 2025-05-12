@@ -1,11 +1,12 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from "../../providers/ThemeProvider";
 import { useSupabase } from "../../providers/SupabaseProvider";
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../../lib/LanguageContext';
 import { useTranslation } from '../../../lib/i18n';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { showAuthNotification } from '../../../lib/auth-notifications';
 
 export default function SignIn() {
   const { dark, toggleTheme } = useTheme();
@@ -16,26 +17,29 @@ export default function SignIn() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    console.log('Idioma do navegador:', navigator.language);
+    console.log('Idioma atual da aplicação:', language);
+  }, [language]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
     
     try {
       const { error } = await signIn(email, password);
       
       if (error) {
-        setError(error.message || t('auth.signInError'));
+        showAuthNotification.signInError(language, error.message);
       } else {
-        // Redirect to chat page on successful sign in
+        showAuthNotification.signInSuccess(language);
         router.push('/chat');
       }
     } catch (err: any) {
-      setError(err.message || t('common.error'));
+      showAuthNotification.signInError(language, err.message);
     } finally {
       setLoading(false);
     }
@@ -68,19 +72,13 @@ export default function SignIn() {
             <p className="text-white/80 text-left text-base leading-tight w-full mb-4">{t('auth.signInWithGoogle')}</p>
           </div>
           
-          {error && (
-            <div className="mx-6 mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-200 text-sm">
-              {error}
-            </div>
-          )}
-          
           <form className="w-full flex flex-col gap-2" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-y-1">
               <label className="text-white/90 text-sm font-medium" htmlFor="email">{t('auth.email')}</label>
               <input
                 id="email"
                 type="email"
-                placeholder="john@example.com"
+                placeholder={t('auth.emailPlaceholder')}
                 className="auth-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -93,7 +91,7 @@ export default function SignIn() {
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                   className="auth-input pr-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -104,7 +102,7 @@ export default function SignIn() {
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   onClick={() => setShowPassword((v) => !v)}
                   tabIndex={-1}
-                  aria-label={showPassword ? t('auth.hidePassword') || 'Hide password' : t('auth.showPassword') || 'Show password'}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
