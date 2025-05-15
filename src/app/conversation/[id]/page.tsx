@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import VideoPlayer from '@/components/VideoPlayer';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 seconds
 const TIMEOUT_DURATION = 30000; // 30 seconds
-const REPLICA_ID = 'r3fbe3834a3e';
-const PERSONA_ID = 'p3bb4745d4f9';
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
   const controller = new AbortController();
@@ -17,6 +16,13 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
     console.log(`Attempting to fetch ${url} (${retries} retries remaining)`);
     const response = await fetch(url, {
       ...options,
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        ...options.headers,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -50,12 +56,41 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
   }
 }
 
-export default function Home() {
+export default function ConversationPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
-  const startConversation = async () => {
+  useEffect(() => {
+    const fetchVideoUrl = async () => {
+      try {
+        const apiKey = process.env.NEXT_PUBLIC_TAVUS_API_KEY;
+        if (!apiKey) {
+          throw new Error('API key is not configured');
+        }
+
+        const response = await fetchWithRetry(
+          `https://tavusapi.com/v2/conversations/${params.id}/video`,
+          {
+            headers: {
+              'x-api-key': apiKey,
+            },
+          }
+        );
+
+        const data = await response.json();
+        setVideoUrl(data.url);
+      } catch (err) {
+        console.error('Error fetching video:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch video');
+      }
+    };
+
+    fetchVideoUrl();
+  }, [params.id]);
+
+  const endConversation = async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -66,30 +101,25 @@ export default function Home() {
       }
 
       const response = await fetchWithRetry(
-        'https://tavusapi.com/v2/conversations',
+        `https://tavusapi.com/v2/conversations/${params.id}/end`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey,
           },
-          body: JSON.stringify({
-            replica_id: REPLICA_ID,
-            persona_id: PERSONA_ID,
-          }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(`Failed to start conversation: ${response.status} ${errorData?.message || response.statusText}`);
+        throw new Error(`Failed to end conversation: ${response.status} ${errorData?.message || response.statusText}`);
       }
 
-      const data = await response.json();
-      router.push(`/conversation/${data.conversation_id}`);
+      router.push('/');
     } catch (err) {
-      console.error('Error starting conversation:', err);
-      setError(err instanceof Error ? err.message : 'Failed to start conversation');
+      console.error('Error ending conversation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to end conversation');
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +128,7 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col bg-auth-gradient">
       <div className="flex-1 container mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md mx-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
             Tavus Conversation
           </h1>
@@ -110,16 +140,20 @@ export default function Home() {
           )}
 
           <div className="space-y-4">
-            <button
-              onClick={startConversation}
-              disabled={isLoading}
-              className="auth-button w-full"
-            >
-              {isLoading ? 'Starting...' : 'Start New Conversation'}
-            </button>
+            {videoUrl && <VideoPlayer url={videoUrl} />}
+            
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={endConversation}
+                disabled={isLoading}
+                className="auth-button"
+              >
+                {isLoading ? 'Ending...' : 'End Conversation'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </main>
   );
-}
+} 
