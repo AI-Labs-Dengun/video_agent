@@ -60,22 +60,19 @@ export default function Home() {
       setIsLoading(true);
       setError(null);
 
-      const apiKey = process.env.NEXT_PUBLIC_TAVUS_API_KEY;
-      if (!apiKey) {
-        throw new Error('API key is not configured');
-      }
-
       const response = await fetchWithRetry(
-        'https://tavusapi.com/v2/conversations',
+        '/api/tavus',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': apiKey,
           },
           body: JSON.stringify({
-            replica_id: REPLICA_ID,
-            persona_id: PERSONA_ID,
+            endpoint: '/conversations',
+            body: {
+              replica_id: REPLICA_ID,
+              persona_id: PERSONA_ID,
+            },
           }),
         }
       );

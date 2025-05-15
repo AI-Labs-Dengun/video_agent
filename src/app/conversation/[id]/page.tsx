@@ -65,16 +65,12 @@ export default function ConversationPage({ params }: { params: { id: string } })
   useEffect(() => {
     const fetchVideoUrl = async () => {
       try {
-        const apiKey = process.env.NEXT_PUBLIC_TAVUS_API_KEY;
-        if (!apiKey) {
-          throw new Error('API key is not configured');
-        }
-
         const response = await fetchWithRetry(
-          `https://tavusapi.com/v2/conversations/${params.id}/video`,
+          `/api/tavus?endpoint=/conversations/${params.id}/video`,
           {
             headers: {
-              'x-api-key': apiKey,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
             },
           }
         );
@@ -95,19 +91,16 @@ export default function ConversationPage({ params }: { params: { id: string } })
       setIsLoading(true);
       setError(null);
 
-      const apiKey = process.env.NEXT_PUBLIC_TAVUS_API_KEY;
-      if (!apiKey) {
-        throw new Error('API key is not configured');
-      }
-
       const response = await fetchWithRetry(
-        `https://tavusapi.com/v2/conversations/${params.id}/end`,
+        '/api/tavus',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': apiKey,
           },
+          body: JSON.stringify({
+            endpoint: `/conversations/${params.id}/end`,
+          }),
         }
       );
 
