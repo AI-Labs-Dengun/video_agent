@@ -66,7 +66,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
     const fetchVideoUrl = async () => {
       try {
         const response = await fetchWithRetry(
-          `/api/tavus?endpoint=/conversations/${params.id}/video`,
+          `/api/tavus?endpoint=/conversations/${params.id}`,
           {
             headers: {
               'Accept': 'application/json',
@@ -76,7 +76,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
         );
 
         const data = await response.json();
-        setVideoUrl(data.url);
+        if (data.video_url) {
+          setVideoUrl(data.video_url);
+        } else {
+          throw new Error('No video URL found in the response');
+        }
       } catch (err) {
         console.error('Error fetching video:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch video');

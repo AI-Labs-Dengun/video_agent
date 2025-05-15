@@ -615,7 +615,6 @@ const ChatComponent = () => {
                   <div
                     className={`rounded-xl p-4 border-[0.5px] border-white text-white bg-transparent max-w-[90%] md:max-w-[90%] min-w-[100px] text-base relative ${msg.user === 'me' ? 'ml-2' : 'mr-2'}`}
                   >
-
                     {/* typing effect for bot messages */}
                     <div className="flex items-center gap-2 mb-4">
                       {msg.user === 'bot' ? (
@@ -629,51 +628,56 @@ const ChatComponent = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-5 pb-1 relative justify-between">
-                      <div className="flex items-center gap-2">
-                        {msg.user === 'bot' && (
-                          <>
-                            <button
-                              className={`transition-colors ${feedback[msg.id] === 'like' ? 'text-green-400' : 'text-white'} hover:text-green-400`}
-                              onClick={() => handleFeedback(msg.id, 'like', msg.content)}
-                            >
-                              <FaRegThumbsUp className="text-lg" />
-                            </button>
-                            <button
-                              className={`transition-colors ${feedback[msg.id] === 'dislike' ? 'text-red-400' : 'text-white'} hover:text-red-400`}
-                              onClick={() => handleFeedback(msg.id, 'dislike', msg.content)}
-                            >
-                              <FaRegThumbsDown className="text-lg" />
-                            </button>
+                      {msg.user === 'bot' && (
+                        <>
+                          <button
+                            className={`transition-colors ${feedback[msg.id] === 'like' ? 'text-green-400' : 'text-white'} hover:text-green-400`}
+                            onClick={() => handleFeedback(msg.id, 'like', msg.content)}
+                          >
+                            <FaRegThumbsUp className="text-lg" />
+                          </button>
+                          <button
+                            className={`transition-colors ${feedback[msg.id] === 'dislike' ? 'text-red-400' : 'text-white'} hover:text-red-400`}
+                            onClick={() => handleFeedback(msg.id, 'dislike', msg.content)}
+                          >
+                            <FaRegThumbsDown className="text-lg" />
+                          </button>
 
-                            {/* Audio button for bot messages */}
-                            <button
-                              className={`hover:text-blue-300 transition-colors`}
-                              onClick={async () => {
-                                if (currentPlayingMessageId === msg.id) {
-                                  toggleAudioPlayback();
-                                } else {
-                                  setTtsLoadingMsgId(msg.id);
-                                  await playTTS(msg.content, msg.id, () => setTtsLoadingMsgId(null));
-                                  setTtsLoadingMsgId(null);
-                                }
-                              }}
-                              disabled={ttsLoadingMsgId === msg.id}
-                            >
-                              {ttsLoadingMsgId === msg.id ? (
-                                <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 inline-block"></span>
-                              ) : currentPlayingMessageId === msg.id && isAudioPaused ? (
-                                <FaPlay className="text-lg text-white" />
-                              ) : currentPlayingMessageId === msg.id && isAudioPlaying ? (
-                                <FaPause className="text-lg text-white" />
-                              ) : (
-                                <FaVolumeUp className="text-lg text-white" />
-                              )}
-                            </button>
-                            <button className="hover:text-blue-300 transition-colors" onClick={() => setCommentModal({ open: true, message: { id: msg.id, content: msg.content } })}><FaRegCommentDots className="text-lg text-white" /></button>
-                          </>
-                        )}
-                      </div>
-                      <span className="text-xs opacity-60 whitespace-nowrap">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          {/* Audio button for bot messages */}
+                          <button
+                            className={`hover:text-blue-300 transition-colors`}
+                            onClick={async () => {
+                              if (currentPlayingMessageId === msg.id) {
+                                toggleAudioPlayback();
+                              } else {
+                                setTtsLoadingMsgId(msg.id);
+                                await playTTS(msg.content, msg.id, () => setTtsLoadingMsgId(null));
+                                setTtsLoadingMsgId(null);
+                              }
+                            }}
+                            disabled={ttsLoadingMsgId === msg.id}
+                          >
+                            {ttsLoadingMsgId === msg.id ? (
+                              <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 inline-block"></span>
+                            ) : currentPlayingMessageId === msg.id && isAudioPaused ? (
+                              <FaPlay className="text-lg text-white" />
+                            ) : currentPlayingMessageId === msg.id && isAudioPlaying ? (
+                              <FaPause className="text-lg text-white" />
+                            ) : (
+                              <FaVolumeUp className="text-lg text-white" />
+                            )}
+                          </button>
+                          <button 
+                            className="hover:text-blue-300 transition-colors" 
+                            onClick={() => setCommentModal({ open: true, message: { id: msg.id, content: msg.content } })}
+                          >
+                            <FaRegCommentDots className="text-lg text-white" />
+                          </button>
+                        </>
+                      )}
+                      <span className="text-xs opacity-60 whitespace-nowrap">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   </div>
                   {msg.user === 'me' && (
@@ -703,7 +707,7 @@ const ChatComponent = () => {
                 {t('chat.suggestions')}
               </button>
             </div>
-            <div className="hidden md:flex flex-col gap-2 mb-4 items-center w-full">
+            <div className="hidden md:block">
               <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
                 {tooltips.slice(0, 2).map((tip, idx) => (
                   <button
@@ -727,48 +731,9 @@ const ChatComponent = () => {
                 ))}
               </div>
             </div>
-            {showTooltipsModal && (
-              <div 
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) {
-                    console.log('Modal clicado fora');
-                    setShowTooltipsModal(false);
-                  }
-                }}
-              >
-                <div className="bg-auth-gradient bg-opacity-90 rounded-2xl shadow-2xl p-6 max-w-xs w-full flex flex-col items-center border border-white/30 backdrop-blur-md relative">
-                  <button
-                    className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
-                    onClick={() => {
-                      console.log('Botão de fechar modal clicado');
-                      setShowTooltipsModal(false);
-                    }}
-                    aria-label="Close"
-                    type="button"
-                  >
-                    &times;
-                  </button>
-                  <h2 className="text-lg font-bold text-white mb-4 drop-shadow">{t('chat.suggestions')}</h2>
-                  <div className="flex flex-col gap-3 w-full">
-                    {tooltips.map((tip, idx) => (
-                      <button
-                        key={idx}
-                        className="w-full px-4 py-2 rounded-lg bg-white/20 text-white/90 hover:bg-blue-400/80 transition-colors text-center"
-                        onClick={() => { 
-                          console.log('Sugestão clicada:', tip);
-                          handleTooltipClick(tip); 
-                        }}
-                      >
-                        {tip}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
+
         <footer className="w-full p-3">
           <form
             onSubmit={handleSendMessage}
@@ -843,6 +808,7 @@ const ChatComponent = () => {
             handleComment(commentModal.message.id, commentModal.message.content, comment);
           }
         }}
+        message={commentModal.message}
       />
       <VoiceModal
         isOpen={voiceModalOpen && (voiceModalMode === 'ready-to-record' || voiceModalMode === 'recording')}
