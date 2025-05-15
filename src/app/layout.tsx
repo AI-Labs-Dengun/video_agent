@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
-import { SupabaseProvider } from "./providers/SupabaseProvider";
 import { headers } from "next/headers";
 import { LanguageProvider } from '../lib/LanguageContext';
 import { Toaster } from 'react-hot-toast';
@@ -58,10 +57,8 @@ export default async function RootLayout({
       <body className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
         <LanguageProvider>
           <ThemeProvider>
-            <SupabaseProvider>
-              {children}
-              <Toaster />
-            </SupabaseProvider>
+            {children}
+            <Toaster />
           </ThemeProvider>
         </LanguageProvider>
       </body>

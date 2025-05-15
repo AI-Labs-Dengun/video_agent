@@ -1,8 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-type Language = 'pt' | 'en' | 'es' | 'fr' | 'de';
+import { Language, getBrowserLanguage } from './i18n';
 
 interface LanguageContextType {
   language: Language;
@@ -25,17 +24,28 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     setMounted(true);
-    // Primeiro tenta obter o idioma salvo no localStorage
-    const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && ['pt', 'en', 'es', 'fr', 'de'].includes(savedLanguage)) {
-      setLanguage(savedLanguage);
-    } else {
-      // Se não houver idioma salvo, usa o idioma do navegador
-      const browserLang = navigator.language.split('-')[0];
-      const supportedLang = ['pt', 'en', 'es', 'fr', 'de'].includes(browserLang) ? browserLang : 'en';
-      setLanguage(supportedLang as Language);
-      localStorage.setItem('language', supportedLang);
-    }
+    
+    const detectLanguage = () => {
+      // 1. Tenta obter o idioma salvo no localStorage
+      const savedLanguage = localStorage.getItem('language') as Language;
+      if (savedLanguage && ['pt', 'en', 'es', 'fr', 'de'].includes(savedLanguage)) {
+        return savedLanguage;
+      }
+
+      // 2. Tenta obter o idioma do navegador
+      const browserLang = getBrowserLanguage();
+      if (browserLang) {
+        return browserLang;
+      }
+
+      // 3. Fallback para inglês
+      return 'en';
+    };
+
+    const detectedLang = detectLanguage();
+    setLanguage(detectedLang);
+    localStorage.setItem('language', detectedLang);
+    document.documentElement.lang = detectedLang;
   }, []);
 
   const handleSetLanguage = (newLang: Language) => {

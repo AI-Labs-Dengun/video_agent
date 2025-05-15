@@ -23,8 +23,22 @@ export const languageNames: Record<Language, string> = {
 };
 
 export const getBrowserLanguage = (): Language => {
+  // Tenta obter o idioma principal do navegador
   const browserLang = navigator.language.split('-')[0];
-  return ['pt', 'en', 'es', 'fr', 'de'].includes(browserLang) ? browserLang as Language : 'en';
+  
+  // Verifica se o idioma é suportado
+  if (['pt', 'en', 'es', 'fr', 'de'].includes(browserLang)) {
+    return browserLang as Language;
+  }
+
+  // Tenta obter o primeiro idioma preferido do usuário
+  const preferredLang = navigator.languages[0]?.split('-')[0];
+  if (preferredLang && ['pt', 'en', 'es', 'fr', 'de'].includes(preferredLang)) {
+    return preferredLang as Language;
+  }
+
+  // Fallback para inglês
+  return 'en';
 };
 
 export const useTranslation = (language: Language) => {
@@ -32,11 +46,21 @@ export const useTranslation = (language: Language) => {
     const keys = key.split('.');
     let value: any = translations[language];
     
+    // Tenta obter a tradução no idioma atual
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        return key;
+        // Se não encontrar no idioma atual, tenta em inglês
+        value = translations['en'];
+        for (const k of keys) {
+          if (value && typeof value === 'object' && k in value) {
+            value = value[k];
+          } else {
+            return key;
+          }
+        }
+        return typeof value === 'string' ? value : key;
       }
     }
     

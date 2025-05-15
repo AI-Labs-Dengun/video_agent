@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useSupabase } from '../providers/SupabaseProvider';
 import { useRouter } from 'next/navigation';
 import { FaRegThumbsUp, FaRegThumbsDown, FaMicrophone, FaPaperPlane, FaUserCircle, FaRobot, FaCog, FaRegCommentDots, FaVolumeUp, FaRegSmile, FaStop } from 'react-icons/fa';
 import { useTheme } from '../providers/ThemeProvider';

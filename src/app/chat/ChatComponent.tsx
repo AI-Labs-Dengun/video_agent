@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaCog, FaSignOutAlt, FaPause, FaPlay } from 'react-icons/fa';
-import { useSupabase } from '../providers/SupabaseProvider';
+import { FaRobot, FaUserCircle, FaRegThumbsUp, FaRegThumbsDown, FaRegCommentDots, FaVolumeUp, FaPaperPlane, FaRegSmile, FaMicrophone, FaPause, FaPlay } from 'react-icons/fa';
 import { useTheme } from '../providers/ThemeProvider';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useTranslation, Language, languageNames, translations } from '../../lib/i18n';
@@ -28,7 +27,6 @@ interface Message {
 }
 
 const ChatComponent = () => {
-  const { user, signOut } = useSupabase();
   const { dark, toggleTheme } = useTheme();
   const { language } = useLanguage();
   const { t } = useTranslation(language as Language);
@@ -37,7 +35,6 @@ const ChatComponent = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedback, setFeedback] = useState<Record<string, 'like' | 'dislike' | undefined>>({});
   const [commentModal, setCommentModal] = useState<{ open: boolean, message?: { id: string, content: string } }>({ open: false });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -61,8 +58,6 @@ const ChatComponent = () => {
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
-  const settingsButtonRef = useRef<HTMLButtonElement>(null);
-  const settingsModalRef = useRef<HTMLDivElement>(null);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isAudioPaused, setIsAudioPaused] = useState(false);
   const [currentPlayingMessageId, setCurrentPlayingMessageId] = useState<string | null>(null);
@@ -82,12 +77,6 @@ const ChatComponent = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isNearBottom]);
-
-  React.useEffect(() => {
-    if (!user) {
-      router.push('/sign-in');
-    }
-  }, [user, router]);
 
   React.useEffect(() => {
     if (messages.length > 0 && messages[messages.length - 1].user === 'bot' && inputRef.current) {
@@ -302,16 +291,13 @@ const ChatComponent = () => {
         `${msg.user === 'me' ? 'Cliente' : 'Assistente'}: ${msg.content}`
       ).join('\n\n');
 
-      // Usa o email do usuário logado se não houver um novo email informado
-      const emailToUse = email || user?.email;
-
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: emailToUse,
+          email,
           phone,
           conversation,
         }),
@@ -328,7 +314,7 @@ const ChatComponent = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     handleFirstInteraction();
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim()) return;
 
     // Detecta informações de contato na mensagem
     const { email, phone } = detectContactInfo(newMessage);
@@ -378,11 +364,6 @@ const ChatComponent = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/sign-in');
   };
 
   const handleFeedback = async (messageId: string, type: 'like' | 'dislike', content: string) => {
@@ -556,7 +537,6 @@ const ChatComponent = () => {
 
   const handleTooltipClick = async (tooltip: string) => {
     handleFirstInteraction();
-    if (!user) return;
     const userMsg: Message = {
       id: 'user-' + Date.now(),
       content: tooltip,
@@ -657,47 +637,6 @@ const ChatComponent = () => {
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (settingsOpen && 
-          settingsModalRef.current && 
-          !settingsModalRef.current.contains(event.target as Node) &&
-          settingsButtonRef.current && 
-          !settingsButtonRef.current.contains(event.target as Node)) {
-        setSettingsOpen(false);
-      }
-    };
-
-    if (settingsOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [settingsOpen]);
-
-  // Adicionar useEffect para detectar clique fora do modal
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (voiceModalOpen && 
-          voiceModalRef.current && 
-          !voiceModalRef.current.contains(event.target as Node)) {
-        handleVoiceModalClose();
-      }
-    };
-
-    if (voiceModalOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [voiceModalOpen]);
-
-  if (!user) return null;
-
   return (
     <div className="bg-auth-gradient min-h-screen flex items-center justify-center">
       <Toaster position="bottom-right" />
@@ -705,47 +644,22 @@ const ChatComponent = () => {
         <header className="p-4 md:p-4 flex justify-between items-center relative border-b border-white/20">
           <h1 className="text-2xl font-bold text-white drop-shadow">{t('chat.assistantTitle') || 'Assistente IA'}</h1>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <button
-                ref={settingsButtonRef}
-                onClick={() => setSettingsOpen((v) => !v)}
-                className="p-2 rounded-full bg-white/30 hover:bg-white/50 text-gray-800 dark:text-white focus:outline-none"
-                aria-label={t('settings.title')}
-              >
-                <FaCog className="text-xl text-white" />
-              </button>
-              {settingsOpen && (
-                <div 
-                  ref={settingsModalRef}
-                  className="absolute right-0 mt-2 w-48 bg-auth-gradient bg-opacity-90 rounded-xl shadow-lg border border-white z-50 backdrop-blur-md settings-modal"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    onClick={toggleTheme}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-white hover:bg-white/10 rounded-t-xl"
-                  >
-                    {dark ? (
-                      <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5 text-yellow-400'>
-                        <path strokeLinecap='round' strokeLinejoin='round' d='M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.05 17.95l-1.414 1.414m12.728 0l-1.414-1.414M6.05 6.05L4.636 4.636' />
-                        <circle cx='12' cy='12' r='5' fill='currentColor' />
-                      </svg>
-                    ) : (
-                      <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5 text-gray-700 dark:text-white'>
-                        <path strokeLinecap='round' strokeLinejoin='round' d='M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z' />
-                      </svg>
-                    )}
-                    {dark ? t('settings.lightMode') : t('settings.darkMode')}
-                  </button>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-white hover:bg-white/10 rounded-b-xl"
-                  >
-                    <FaSignOutAlt className="w-5 h-5 text-black dark:text-white" />
-                    {t('auth.signOut') || 'Sair'}
-                  </button>
-                </div>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full bg-white/30 hover:bg-white/50 text-gray-800 dark:text-white focus:outline-none"
+              aria-label={dark ? t('settings.lightMode') : t('settings.darkMode')}
+            >
+              {dark ? (
+                <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5 text-yellow-400'>
+                  <path strokeLinecap='round' strokeLinejoin='round' d='M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.05 17.95l-1.414 1.414m12.728 0l-1.414-1.414M6.05 6.05L4.636 4.636' />
+                  <circle cx='12' cy='12' r='5' fill='currentColor' />
+                </svg>
+              ) : (
+                <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5 text-gray-700 dark:text-white'>
+                  <path strokeLinecap='round' strokeLinejoin='round' d='M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z' />
+                </svg>
               )}
-            </div>
+            </button>
           </div>
         </header>
         <main
