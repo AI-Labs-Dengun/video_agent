@@ -88,49 +88,30 @@ const ChatComponent = () => {
   useEffect(() => {
     if (messages.length === 0) {
       setGreetingLoading(true);
-      (async () => {
-        try {
-          const [instructionsRes, knowledgeRes] = await Promise.all([
-            fetch('/AI_INSTRUCTIONS.md'),
-            fetch('/AI_KNOWLEDGE.md'),
-          ]);
-          const instructionsText = await instructionsRes.text();
-          const knowledgeText = await knowledgeRes.text();
-          const greetingPrompt = `Generate a creative, warm, and original greeting for a new user in ${language}. Use the INSTRUCTIONS to define the tone and style of the message, and the KNOWLEDGE BASE to incorporate specific information about Dengun and its services. Be original and do not copy any examples from the instructions. The greeting should reflect Dengun's professional and welcoming personality, mentioning some of the main services and inviting the user to explore how we can help. Keep your answer very short (1-2 sentences).`;
-          const res = await fetch('/api/chatgpt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: greetingPrompt }),
-          });
-          const data = await res.json();
-          setMessages([
-            {
-              id: 'welcome',
-              content: data.reply && data.reply.trim() ? data.reply : t('chat.greeting'),
-              user: 'bot',
-              created_at: new Date().toISOString(),
-            },
-          ]);
-          
-          // Reinicia o estado de interação do usuário quando uma nova mensagem de boas-vindas é mostrada
-          setHasUserInteracted(false);
-        } catch (err) {
-          console.error('Erro ao carregar mensagem de boas-vindas:', err);
-          setMessages([
-            {
-              id: 'welcome',
-              content: t('chat.greeting'),
-              user: 'bot',
-              created_at: new Date().toISOString(),
-            },
-          ]);
-          
-          // Reinicia o estado de interação do usuário quando uma nova mensagem de boas-vindas é mostrada
-          setHasUserInteracted(false);
-        } finally {
-          setGreetingLoading(false);
-        }
-      })();
+      try {
+        setMessages([
+          {
+            id: 'welcome',
+            content: t('chat.greeting'),
+            user: 'bot',
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        setHasUserInteracted(false);
+      } catch (err) {
+        console.error('Error loading welcome message:', err);
+        setMessages([
+          {
+            id: 'welcome',
+            content: t('chat.greeting'),
+            user: 'bot',
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        setHasUserInteracted(false);
+      } finally {
+        setGreetingLoading(false);
+      }
     }
   }, [language]);
 
@@ -313,19 +294,20 @@ const ChatComponent = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    handleFirstInteraction();
     if (!newMessage.trim()) return;
 
-    // Detecta informações de contato na mensagem
-    const { email, phone } = detectContactInfo(newMessage);
-    
-    const userMsg: Message = {
-      id: 'user-' + Date.now(),
-      content: newMessage,
-      user: 'me',
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
+    const email = detectContactInfo(newMessage)?.email;
+    const phone = detectContactInfo(newMessage)?.phone;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: 'user-' + Date.now(),
+        content: newMessage,
+        user: 'me',
+        created_at: new Date().toISOString(),
+      },
+    ]);
     setNewMessage('');
     setLoading(true);
 
@@ -334,19 +316,13 @@ const ChatComponent = () => {
       await sendEmailWithConversation(email, phone);
     }
 
-    const prompt = `${newMessage}\n\nPlease answer ONLY in ${languageNames[language as Language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
     try {
-      const res = await fetch('/api/chatgpt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: prompt }),
-      });
-      const data = await res.json();
+      // For now, just echo back a simple response
       setMessages((prev) => [
         ...prev,
         {
           id: 'bot-' + Date.now(),
-          content: data.reply || t('chat.greeting'),
+          content: t('chat.defaultResponse'),
           user: 'bot',
           created_at: new Date().toISOString(),
         },
@@ -403,11 +379,6 @@ const ChatComponent = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId, content, comment }),
-      });
-      await fetch('/api/chatgpt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: comment }),
       });
     } catch (e) {}
   };
@@ -537,57 +508,21 @@ const ChatComponent = () => {
 
   const handleTooltipClick = async (tooltip: string) => {
     handleFirstInteraction();
-    const userMsg: Message = {
-      id: 'user-' + Date.now(),
-      content: tooltip,
-      user: 'me',
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setLoading(true);
-    const prompt = `${tooltip}\n\nPlease answer ONLY in ${languageNames[language as Language] || 'English'}, regardless of the language of the question. Do not mention language or your ability to assist in other languages. Keep your answer short and concise.`;
-    try {
-      const res = await fetch('/api/chatgpt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: prompt }),
-      });
-      const data = await res.json();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: 'bot-' + Date.now(),
-          content: data.reply || t('chat.greeting'),
-          user: 'bot',
-          created_at: new Date().toISOString(),
-        },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: 'bot-error-' + Date.now(),
-          content: t('common.error'),
-          user: 'bot',
-          created_at: new Date().toISOString(),
-        },
-      ]);
-    } finally {
-      setLoading(false);
+    setNewMessage(tooltip);
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
   };
 
   const handleAudioSubmit = async (audioBlob: Blob) => {
-    setVoiceModalMode('thinking');
     try {
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'audio.wav');
+      formData.append('audio', audioBlob);
       const res = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData,
       });
       const data = await res.json();
-      console.log('Transcription result:', data);
       if (data.text) {
         const userMsg = {
           id: 'user-' + Date.now(),
@@ -598,28 +533,22 @@ const ChatComponent = () => {
         setMessages((prev) => [...prev, userMsg]);
         setLoading(true);
         try {
-          const res = await fetch('/api/chatgpt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: data.text }),
-          });
-          const aiData = await res.json();
+          // For now, just echo back a simple response
           setMessages((prev) => [
             ...prev,
             {
               id: 'bot-' + Date.now(),
-              content: aiData.reply || 'Desculpe, não consegui responder agora.',
+              content: t('chat.defaultResponse'),
               user: 'bot',
               created_at: new Date().toISOString(),
             },
           ]);
-          // setVoiceModalMode('ready-to-record'); //Gravador de audio automatico após resposta do chat 
         } catch (err) {
           setMessages((prev) => [
             ...prev,
             {
               id: 'bot-error-' + Date.now(),
-              content: 'Erro ao conectar ao ChatGPT.',
+              content: t('common.error'),
               user: 'bot',
               created_at: new Date().toISOString(),
             },
