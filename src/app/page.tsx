@@ -3,49 +3,26 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // 2 seconds
 const TIMEOUT_DURATION = 30000; // 30 seconds
 const REPLICA_ID = 'r3fbe3834a3e';
 const PERSONA_ID = 'p3bb4745d4f9';
 
-async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_DURATION);
-
   try {
-    console.log(`Attempting to fetch ${url} (${retries} retries remaining)`);
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      console.error(`API Error: ${response.status}`, errorData);
       throw new Error(`API Error: ${response.status} ${errorData?.message || response.statusText}`);
     }
-    
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
-    
-    if (error instanceof Error) {
-      console.error(`Fetch error: ${error.message}`);
-      
-      if (error.name === 'AbortError') {
-        console.error('Request timed out after', TIMEOUT_DURATION, 'ms');
-        throw new Error('Request timed out');
-      }
-    }
-
-    if (retries > 0) {
-      const delay = RETRY_DELAY * Math.pow(2, MAX_RETRIES - retries); // Exponential backoff
-      console.log(`Retrying in ${delay}ms... ${retries} attempts remaining`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return fetchWithRetry(url, options, retries - 1);
-    }
     throw error;
   }
 }
@@ -60,7 +37,7 @@ export default function Home() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetchWithRetry(
+      const response = await fetchWithTimeout(
         '/api/tavus',
         {
           method: 'POST',
@@ -77,12 +54,10 @@ export default function Home() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(`Failed to start conversation: ${response.status} ${errorData?.message || response.statusText}`);
-      }
-
       const data = await response.json();
+      if (!data.conversation_id) {
+        throw new Error(`Failed to start conversation: ${data.error || data.message || 'Unknown error'}`);
+      }
       router.push(`/conversation/${data.conversation_id}`);
     } catch (err) {
       console.error('Error starting conversation:', err);

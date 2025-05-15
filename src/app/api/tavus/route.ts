@@ -1,61 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TAVUS_API_BASE = 'https://api.tavus.io/v1';
+const TAVUS_API_BASE = 'https://tavusapi.com/v2';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { endpoint, method = 'POST', body } = await req.json();
     const apiKey = process.env.TAVUS_API_KEY;
-
     if (!apiKey) {
       console.error('Tavus API key is not configured');
       return NextResponse.json(
-        { error: 'API key not configured. Please set TAVUS_API_KEY in your environment variables.' },
+        { error: 'API key not configured' },
         { status: 500 }
       );
     }
 
-    console.log(`Making ${method} request to ${TAVUS_API_BASE}${endpoint}`);
-    
-    const response = await fetch(`${TAVUS_API_BASE}${endpoint}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Tavus API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        data,
-        endpoint: `${TAVUS_API_BASE}${endpoint}`
-      });
-      return NextResponse.json(
-        { error: data.message || 'API request failed' },
-        { status: response.status }
-      );
-    }
-
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('Tavus API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const endpoint = searchParams.get('endpoint');
-    const apiKey = process.env.TAVUS_API_KEY;
+    const body = await request.json();
+    const { endpoint, method = 'POST', body: requestBody } = body;
 
     if (!endpoint) {
       return NextResponse.json(
@@ -64,19 +23,84 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Normalize endpoint path
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${TAVUS_API_BASE}${normalizedEndpoint}`;
+
+    console.log('Making request to Tavus:', {
+      url,
+      method,
+      body: requestBody
+    });
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: requestBody ? JSON.stringify(requestBody) : undefined,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Tavus API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        data
+      });
+      return NextResponse.json(
+        { error: data.message || 'Failed to process request' },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error in Tavus API route:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const apiKey = process.env.TAVUS_API_KEY;
     if (!apiKey) {
       console.error('Tavus API key is not configured');
       return NextResponse.json(
-        { error: 'API key not configured. Please set TAVUS_API_KEY in your environment variables.' },
+        { error: 'API key not configured' },
         { status: 500 }
       );
     }
 
-    console.log(`Making GET request to ${TAVUS_API_BASE}${endpoint}`);
+    const searchParams = request.nextUrl.searchParams;
+    const endpoint = searchParams.get('endpoint');
 
-    const response = await fetch(`${TAVUS_API_BASE}${endpoint}`, {
+    if (!endpoint) {
+      return NextResponse.json(
+        { error: 'Endpoint is required' },
+        { status: 400 }
+      );
+    }
+
+    // Normalize endpoint path
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${TAVUS_API_BASE}${normalizedEndpoint}`;
+
+    console.log('Making request to Tavus:', {
+      url,
+      method: 'GET'
+    });
+
+    const response = await fetch(url, {
       headers: {
         'x-api-key': apiKey,
+        'Accept': 'application/json',
       },
     });
 
@@ -86,20 +110,19 @@ export async function GET(req: NextRequest) {
       console.error('Tavus API error:', {
         status: response.status,
         statusText: response.statusText,
-        data,
-        endpoint: `${TAVUS_API_BASE}${endpoint}`
+        data
       });
       return NextResponse.json(
-        { error: data.message || 'API request failed' },
+        { error: data.message || 'Failed to process request' },
         { status: response.status }
       );
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Tavus API error:', error);
+    console.error('Error in Tavus API route:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

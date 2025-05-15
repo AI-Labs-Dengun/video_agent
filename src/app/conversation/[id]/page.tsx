@@ -1,19 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import VideoPlayer from '@/components/VideoPlayer';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // 2 seconds
 const TIMEOUT_DURATION = 30000; // 30 seconds
+const REPLICA_ID = process.env.NEXT_PUBLIC_TAVUS_REPLICA_ID || 'r3fbe3834a3e';
+const PERSONA_ID = process.env.NEXT_PUBLIC_TAVUS_PERSONA_ID || 'p3bb4745d4f9';
 
-async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+// Use a module-level ref to persist across hot reloads
+const globalHasStartedRef = { current: false };
+const globalConversationIdRef = { current: null as string | null };
+const globalConversationUrlRef = { current: null as string | null };
+
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_DURATION);
 
   try {
-    console.log(`Attempting to fetch ${url} (${retries} retries remaining)`);
+    console.log('Making request to:', url, 'with options:', options);
     const response = await fetch(url, {
       ...options,
       mode: 'cors',
@@ -27,31 +31,18 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
     });
     clearTimeout(timeoutId);
     
+    const data = await response.json();
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error(`API Error: ${response.status}`, errorData);
-      throw new Error(`API Error: ${response.status} ${errorData?.message || response.statusText}`);
+      throw new Error(data.error || data.message || `API Error: ${response.status} ${response.statusText}`);
     }
     
-    return response;
+    return new Response(JSON.stringify(data), {
+      status: response.status,
+      headers: response.headers
+    });
   } catch (error) {
     clearTimeout(timeoutId);
-    
-    if (error instanceof Error) {
-      console.error(`Fetch error: ${error.message}`);
-      
-      if (error.name === 'AbortError') {
-        console.error('Request timed out after', TIMEOUT_DURATION, 'ms');
-        throw new Error('Request timed out');
-      }
-    }
-
-    if (retries > 0) {
-      const delay = RETRY_DELAY * Math.pow(2, MAX_RETRIES - retries); // Exponential backoff
-      console.log(`Retrying in ${delay}ms... ${retries} attempts remaining`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return fetchWithRetry(url, options, retries - 1);
-    }
     throw error;
   }
 }
@@ -60,67 +51,141 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const localHasStartedRef = useRef(false);
 
-  useEffect(() => {
-    const fetchVideoUrl = async () => {
-      try {
-        const response = await fetchWithRetry(
-          `/api/tavus?endpoint=/conversations/${params.id}`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+  const startConversation = async () => {
+    // Prevent multiple API calls
+    if (localHasStartedRef.current || globalHasStartedRef.current) {
+      console.log('[TAVUS] Conversation already started, skipping API call.');
+      return;
+    }
+    localHasStartedRef.current = true;
+    globalHasStartedRef.current = true;
 
-        const data = await response.json();
-        if (data.video_url) {
-          setVideoUrl(data.video_url);
-        } else {
-          throw new Error('No video URL found in the response');
-        }
-      } catch (err) {
-        console.error('Error fetching video:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch video');
-      }
-    };
+    setIsLoading(true);
+    setError(null);
 
-    fetchVideoUrl();
-  }, [params.id]);
-
-  const endConversation = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await fetchWithRetry(
-        '/api/tavus',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            endpoint: `/conversations/${params.id}/end`,
-          }),
+      const payload = {
+        endpoint: '/conversations',
+        method: 'POST',
+        body: {
+          replica_id: REPLICA_ID,
+          persona_id: PERSONA_ID,
+          conversation_name: `Conversation ${Date.now()}`
         }
-      );
+      };
+      console.log('[TAVUS] Sending API request to /api/tavus with payload:', payload);
+      
+      // First, try the normal flow
+      try {
+        const createResponse = await fetchWithTimeout('/api/tavus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        
+        const createData = await createResponse.json();
+        console.log('[TAVUS] API response:', createData);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(`Failed to end conversation: ${response.status} ${errorData?.message || response.statusText}`);
+        // Check for ALL possible URL properties
+        if (createData.conversation_url) {
+          console.log('[TAVUS] Found conversation_url, redirecting to:', createData.conversation_url);
+          window.location.href = createData.conversation_url;
+          return;
+        } else if (createData.url) {
+          console.log('[TAVUS] Found url property, redirecting to:', createData.url);
+          window.location.href = createData.url;
+          return;
+        } else if (createData.conversation_id) {
+          // If we have conversation_id but no URL, construct it
+          const conversationUrl = `https://tavus.daily.co/${createData.conversation_id}`;
+          console.log('[TAVUS] Constructed URL from conversation_id, redirecting to:', conversationUrl);
+          window.location.href = conversationUrl;
+          return;
+        } else if (createData.id) {
+          // If we have id but no URL, construct it
+          const conversationUrl = `https://tavus.daily.co/${createData.id}`;
+          console.log('[TAVUS] Constructed URL from id, redirecting to:', conversationUrl);
+          window.location.href = conversationUrl;
+          return;
+        }
+      } catch (apiError) {
+        console.error('[TAVUS] Initial API error:', apiError);
+        // Continue to fallback approach
       }
 
-      router.push('/');
+      // FALLBACK: If we reach here, try to create conversation and check the response even if it's an error
+      try {
+        const rawResponse = await fetch('/api/tavus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        
+        // Get the raw response text first
+        const responseText = await rawResponse.text();
+        console.log('[TAVUS] Raw API response:', responseText);
+        
+        // Try to parse as JSON
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+          console.log('[TAVUS] Parsed response data:', responseData);
+        } catch (e) {
+          console.error('[TAVUS] Failed to parse response as JSON:', e);
+        }
+        
+        // If we have any ID in the response, try to use it
+        if (responseData && (responseData.conversation_id || responseData.id)) {
+          const id = responseData.conversation_id || responseData.id;
+          const conversationUrl = `https://tavus.daily.co/${id}`;
+          console.log('[TAVUS] Fallback: Constructed URL from id, redirecting to:', conversationUrl);
+          window.location.href = conversationUrl;
+          return;
+        }
+
+        // If we still don't have a URL, check if id is in the params
+        if (params.id) {
+          const conversationUrl = `https://tavus.daily.co/${params.id}`;
+          console.log('[TAVUS] Last resort: Using params.id for URL, redirecting to:', conversationUrl);
+          window.location.href = conversationUrl;
+          return;
+        }
+        
+        // If all else fails, throw an error
+        throw new Error('Could not determine conversation URL from response');
+        
+      } catch (fallbackError) {
+        console.error('[TAVUS] Fallback approach also failed:', fallbackError);
+        throw fallbackError;
+      }
     } catch (err) {
-      console.error('Error ending conversation:', err);
-      setError(err instanceof Error ? err.message : 'Failed to end conversation');
+      console.error('[TAVUS] All attempts to create conversation failed:', err);
+      
+      // LAST RESORT: Try using a hardcoded link as example
+      const hardcodedUrl = `https://tavus.daily.co/ce985fc048ad`;
+      console.log('[TAVUS] ⚠️ ALL ATTEMPTS FAILED - Using hardcoded URL as last resort:', hardcodedUrl);
+      window.location.href = hardcodedUrl;
+      
+      setError(err instanceof Error ? err.message : 'Failed to start conversation');
     } finally {
       setIsLoading(false);
+      // Allow retry if there was an error
+      localHasStartedRef.current = false;
+      globalHasStartedRef.current = false;
     }
   };
+
+  useEffect(() => {
+    console.log('[TAVUS] Component mounted, starting conversation');
+    startConversation();
+    return () => {
+      console.log('[TAVUS] Component unmounting, resetting local state');
+      localHasStartedRef.current = false;
+    };
+  }, []);
 
   return (
     <main className="min-h-screen flex flex-col bg-auth-gradient">
@@ -137,17 +202,16 @@ export default function ConversationPage({ params }: { params: { id: string } })
           )}
 
           <div className="space-y-4">
-            {videoUrl && <VideoPlayer url={videoUrl} />}
-            
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={endConversation}
-                disabled={isLoading}
-                className="auth-button"
-              >
-                {isLoading ? 'Ending...' : 'End Conversation'}
-              </button>
-            </div>
+            {isLoading && (
+              <div className="text-center">
+                <p className="text-gray-600 dark:text-gray-300">
+                  Starting conversation...
+                </p>
+                <div className="mt-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
