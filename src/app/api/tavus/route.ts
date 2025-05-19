@@ -49,10 +49,27 @@ export async function POST(request: NextRequest) {
       console.error('Tavus API error:', {
         status: response.status,
         statusText: response.statusText,
-        data
+        data,
+        url,
+        method,
+        headers: {
+          'x-api-key': apiKey ? '***' : 'missing',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
       });
+      
+      // Enhanced error response
       return NextResponse.json(
-        { error: data.message || 'Failed to process request' },
+        { 
+          error: data.message || 'Failed to process request',
+          details: {
+            status: response.status,
+            statusText: response.statusText,
+            apiError: data,
+            endpoint: normalizedEndpoint
+          }
+        },
         { status: response.status }
       );
     }
