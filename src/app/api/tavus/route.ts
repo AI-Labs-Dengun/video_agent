@@ -5,6 +5,12 @@ const TAVUS_API_BASE = 'https://tavusapi.com/v2';
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.TAVUS_API_KEY;
+    console.log('Tavus API Key Status:', {
+      isConfigured: !!apiKey,
+      length: apiKey?.length || 0,
+      prefix: apiKey ? `${apiKey.substring(0, 4)}...` : 'none'
+    });
+    
     if (!apiKey) {
       console.error('Tavus API key is not configured');
       return NextResponse.json(
