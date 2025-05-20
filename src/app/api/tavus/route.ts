@@ -5,6 +5,12 @@ const TAVUS_API_BASE = 'https://tavusapi.com/v2';
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.TAVUS_API_KEY;
+    console.log('Tavus API Key Status:', {
+      isConfigured: !!apiKey,
+      length: apiKey?.length || 0,
+      prefix: apiKey ? `${apiKey.substring(0, 4)}...` : 'none'
+    });
+    
     if (!apiKey) {
       console.error('Tavus API key is not configured');
       return NextResponse.json(
@@ -49,10 +55,27 @@ export async function POST(request: NextRequest) {
       console.error('Tavus API error:', {
         status: response.status,
         statusText: response.statusText,
-        data
+        data,
+        url,
+        method,
+        headers: {
+          'x-api-key': apiKey ? '***' : 'missing',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
       });
+      
+      // Enhanced error response
       return NextResponse.json(
-        { error: data.message || 'Failed to process request' },
+        { 
+          error: data.message || 'Failed to process request',
+          details: {
+            status: response.status,
+            statusText: response.statusText,
+            apiError: data,
+            endpoint: normalizedEndpoint
+          }
+        },
         { status: response.status }
       );
     }
